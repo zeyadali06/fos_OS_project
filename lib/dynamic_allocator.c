@@ -83,6 +83,7 @@ void print_blocks_list(struct MemBlock_LIST list)
 //==================================
 // [1] INITIALIZE DYNAMIC ALLOCATOR:
 //==================================
+ struct MemBlock_LIST list;
 void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpace)
 {
 	//=========================================
@@ -93,9 +94,17 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 	//=========================================
 
 	// TODO: [PROJECT'23.MS1 - #5] [3] DYNAMIC ALLOCATOR - initialize_dynamic_allocator()
-	panic("initialize_dynamic_allocator is not implemented yet");
-}
 
+	// IB->size = initSizeOfAllocatedSpace;
+	// IB->is_free = 1;
+
+	struct BlockMetaData * FB = (struct BlockMetaData *) daStart;
+	FB->size = initSizeOfAllocatedSpace;
+	FB->is_free = 1;
+
+	LIST_INSERT_HEAD(&list,FB);
+
+}
 //=========================================
 // [4] ALLOCATE BLOCK BY FIRST FIT:
 //=========================================
