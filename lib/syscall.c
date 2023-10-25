@@ -1,5 +1,4 @@
 // System call stubs.
-
 #include <inc/syscall.h>
 #include <inc/lib.h>
 
@@ -29,7 +28,7 @@ static inline uint32 syscall(int num, uint32 a1, uint32 a2, uint32 a3, uint32 a4
 				   "D"(a4),
 				   "S"(a5)
 				 : "cc", "memory");
-
+	// cprintf("%d\n", ret);
 	return ret;
 }
 
@@ -319,21 +318,29 @@ void sys_allocate_chunk(uint32 virtual_address, uint32 size, uint32 perms)
 
 /*2023*/
 // TODO: [PROJECT'23.MS1 - #3] [2] SYSTEM CALLS - Implement these system calls
-void *sys_sbrk(int increment)
+// implemented
+void *sys_sbrk(int increm)
 {
 	// Comment the following line before start coding...
-	panic("not implemented yet");
-	return NULL;
+	// panic("not implemented yet");
+	 syscall(SYS_sbrk, increm, 0, 0, 0, 0);
+	// uint32 g = syscall(SYS_sbrk, 0, 0, 0, 0, increm);
+	//cprintf("g: %d\n", g);
+	return (void*)-1;
 }
 
 void sys_free_user_mem(uint32 virtual_address, uint32 size)
 {
+	syscall(SYS_free_user_mem, virtual_address, size, 0, 0, 0);
 	// Comment the following line before start coding...
-	panic("not implemented yet");
+	// panic("not implemented yet");
+	return;
 }
 
 void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 {
+	syscall(SYS_allocate_user_mem, virtual_address, size, 0, 0, 0);
 	// Comment the following line before start coding...
-	panic("not implemented yet");
+	// panic("not implemented yet");
+	return;
 }
