@@ -432,6 +432,27 @@ int process_command(int number_of_arguments, char **arguments)
 {
 	// TODO: [PROJECT'23.MS1 - #2] [1] PLAY WITH CODE! - process_command
 	// Comment the following line before start coding...
-	panic("process_command is not implemented yet");
-	return 0;
+	int command_found = 0;
+    int i ;
+    for (i = 0; i < NUM_OF_COMMANDS; i++)
+    {
+        if (strcmp(arguments[0], commands[i].name) == 0)
+        {
+            command_found = 1;
+            break;
+        }
+    }
+
+    if(command_found)
+    {
+        int return_value;
+        return_value = commands[i].function_to_execute(number_of_arguments, arguments);
+        return return_value;
+    }
+    else
+    {
+        //if not found, then it's unknown command
+        cprintf("Unknown command '%s'\n", arguments[0]);
+        return 0;
+    }
 }
