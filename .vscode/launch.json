@@ -18,8 +18,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "e:/OS/lib",
-      "program": "e:/OS/lib/build/Debug/outDebug",
+      "cwd": "c:/fos_cygwin/FOS_CODES/fos_OS_project/kern/cmd",
+      "program": "c:/fos_cygwin/FOS_CODES/fos_OS_project/kern/cmd/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

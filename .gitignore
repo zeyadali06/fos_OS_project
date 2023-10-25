@@ -1,2 +1,4 @@
 /bochs.log
 obj/
+.vscode/
+resources/
