@@ -253,12 +253,12 @@ void sys_free_user_mem(uint32 virtual_address, uint32 size)
 {
 	if ((uint32 *)virtual_address == NULL)
 	{
-		return sched_kill_env(curenv->env_id);
+		sched_kill_env(curenv->env_id);
 	}
-	else if ((uint32 *)virtual_address > (uint32 *)USER_LIMIT)
-	{
-		return sched_kill_env(curenv->env_id);
-	}
+	else if ((uint32 *)virtual_address >= (uint32 *)USER_LIMIT)
+		{
+			sched_kill_env(curenv->env_id);
+		}
 	if (isBufferingEnabled())
 	{
 		__free_user_mem_with_buffering(curenv, virtual_address, size);
@@ -274,11 +274,11 @@ void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 {
 	if ((uint32 *)virtual_address == NULL)
 	{
-		return sched_kill_env(curenv->env_id);
+		sched_kill_env(curenv->env_id);
 	}
-	else if ((uint32 *)virtual_address > (uint32 *)USER_LIMIT)
+	else if ((uint32 *)virtual_address >= (uint32 *)USER_LIMIT)
 	{
-		return sched_kill_env(curenv->env_id);
+		sched_kill_env(curenv->env_id);
 	}
 	allocate_user_mem(curenv, virtual_address, size);
 	return;
