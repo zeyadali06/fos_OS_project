@@ -19,16 +19,15 @@
 #include "../tests/tst_handler.h"
 #include "../tests/utilities.h"
 
-
-//Array of commands. (initialized)
+// Array of commands. (initialized)
 struct Command commands[] =
-{
+	{
 		//*******************************//
 		/* COMMANDS WITH ZERO ARGUMENTS */
 		//*******************************//
-		{ "help", "Display this list of commands", command_help, 0 },
-		{ "kernel_info", "Display information about the kernel", command_kernel_info, 0 },
-		{ "meminfo", "display info about RAM", command_meminfo, 0},
+		{"help", "Display this list of commands", command_help, 0},
+		{"kernel_info", "Display information about the kernel", command_kernel_info, 0},
+		{"meminfo", "display info about RAM", command_meminfo, 0},
 		{"sched?", "print current scheduler algorithm", command_print_sch_method, 0},
 		{"runall", "run all loaded programs", command_run_all, 0},
 		{"printall", "print all loaded programs", command_print_all, 0},
@@ -57,9 +56,9 @@ struct Command commands[] =
 		//*****************************//
 		/* COMMANDS WITH ONE ARGUMENT */
 		//*****************************//
-		{ "kill", "kill the given environment (by its ID) from the system", command_kill_program, 1},
-		{ "rm", "reads one byte from specific physical location" ,command_readmem_k, 1},
-		{ "schedRR", "switch the scheduler to RR with given quantum", command_sch_RR, 1},
+		{"kill", "kill the given environment (by its ID) from the system", command_kill_program, 1},
+		{"rm", "reads one byte from specific physical location", command_readmem_k, 1},
+		{"schedRR", "switch the scheduler to RR with given quantum", command_sch_RR, 1},
 		{"schedTest", "Used for turning on/off the scheduler test", command_sch_test, 1},
 		{"lru", "set replacement algorithm to LRU", command_set_page_rep_LRU, 1},
 		{"nclock", "set replacement algorithm to Nth chance CLOCK", command_set_page_rep_nthCLOCK, 1},
@@ -68,32 +67,31 @@ struct Command commands[] =
 		//******************************//
 		/* COMMANDS WITH TWO ARGUMENTS */
 		//******************************//
-		{ "wm", "writes one byte to specific physical location" ,command_writemem_k, 2},
-		{ "schedBSD", "switch the scheduler to BSD with given # queues & quantum", command_sch_BSD, 2},
+		{"wm", "writes one byte to specific physical location", command_writemem_k, 2},
+		{"schedBSD", "switch the scheduler to BSD with given # queues & quantum", command_sch_BSD, 2},
 
 		//********************************//
 		/* COMMANDS WITH THREE ARGUMENTS */
 		//********************************//
-		{ "rub", "reads block of bytes from specific location in given environment" ,command_readuserblock, 3},
+		{"rub", "reads block of bytes from specific location in given environment", command_readuserblock, 3},
 
 		//**************************************//
 		/* COMMANDS WITH AT LEAST ONE ARGUMENT */
 		//**************************************//
-		{ "run", "runs a single user program", command_run_program, -1 },
-		{ "wum", "writes one byte to specific location in kernel or a given environment" ,command_writeusermem, -1},
-		{ "rum", "reads one byte from specific location in kernel or a given environment" ,command_readusermem, -1},
-		{ "schedMLFQ", "switch the scheduler to MLFQ with given # queues & quantums", command_sch_MLFQ, -1},
+		{"run", "runs a single user program", command_run_program, -1},
+		{"wum", "writes one byte to specific location in kernel or a given environment", command_writeusermem, -1},
+		{"rum", "reads one byte from specific location in kernel or a given environment", command_readusermem, -1},
+		{"schedMLFQ", "switch the scheduler to MLFQ with given # queues & quantums", command_sch_MLFQ, -1},
 		{"load", "load a single user program to mem with status = NEW", commnad_load_env, -1},
 		{"tst", "run the given test", command_tst, -1},
 };
 
-//Number of commands = size of the array / size of command structure
-uint32 NUM_OF_COMMANDS  = (sizeof(commands)/sizeof(struct Command));
-
+// Number of commands = size of the array / size of command structure
+uint32 NUM_OF_COMMANDS = (sizeof(commands) / sizeof(struct Command));
 
 /***** Implementations of basic kernel command prompt commands *****/
 
-//print name and description of each command
+// print name and description of each command
 int command_help(int number_of_arguments, char **arguments)
 {
 
@@ -108,8 +106,8 @@ int command_help(int number_of_arguments, char **arguments)
 	return 0;
 }
 
-//print information about kernel addresses and kernel size
-int command_kernel_info(int number_of_arguments, char **arguments )
+// print information about kernel addresses and kernel size
+int command_kernel_info(int number_of_arguments, char **arguments)
 {
 	extern char start_of_kernel[], end_of_kernel_code_section[], start_of_uninitialized_data_section[], end_of_kernel[];
 
@@ -119,7 +117,7 @@ int command_kernel_info(int number_of_arguments, char **arguments )
 	cprintf("  Start addr. of uninitialized data section 	%08x (virt)  %08x (phys)\n", start_of_uninitialized_data_section, start_of_uninitialized_data_section - KERNEL_BASE);
 	cprintf("  End address of the kernel   			%08x (virt)  %08x (phys)\n", end_of_kernel, end_of_kernel - KERNEL_BASE);
 	cprintf("Kernel executable memory footprint: %d KB\n",
-			(end_of_kernel-start_of_kernel+1023)/1024);
+			(end_of_kernel - start_of_kernel + 1023) / 1024);
 	return 0;
 }
 
@@ -128,129 +126,128 @@ int command_kernel_info(int number_of_arguments, char **arguments )
 //*****************************************************************************************//
 int command_writeusermem(int number_of_arguments, char **arguments)
 {
-	//deal with the kernel page directory
+	// deal with the kernel page directory
 	if (number_of_arguments == 3)
 	{
 		unsigned int address = strtol(arguments[1], NULL, 16);
-		unsigned char *ptr = (unsigned char *)(address) ;
+		unsigned char *ptr = (unsigned char *)(address);
 
 		*ptr = arguments[2][0];
 	}
-	//deal with a page directory of specific environment
+	// deal with a page directory of specific environment
 	else if (number_of_arguments == 4)
 	{
-		int32 envId = strtol(arguments[1],NULL, 10);
-		struct Env* env = NULL;
-		envid2env(envId, &env, 0 );
+		int32 envId = strtol(arguments[1], NULL, 10);
+		struct Env *env = NULL;
+		envid2env(envId, &env, 0);
 
 		int address = strtol(arguments[2], NULL, 16);
 
-		if(env == NULL) return 0;
+		if (env == NULL)
+			return 0;
 
 		uint32 oldDir = rcr3();
-		//lcr3((uint32) K_PHYSICAL_ADDRESS( env->env_pgdir));
-		lcr3((uint32) (env->env_cr3));
+		// lcr3((uint32) K_PHYSICAL_ADDRESS( env->env_pgdir));
+		lcr3((uint32)(env->env_cr3));
 
-		unsigned char *ptr = (unsigned char *)(address) ;
+		unsigned char *ptr = (unsigned char *)(address);
 
-		//Write the given Character
+		// Write the given Character
 		*ptr = arguments[3][0];
 		lcr3(oldDir);
 	}
 	else
 	{
-		cprintf("wum command: invalid number of arguments\n") ;
+		cprintf("wum command: invalid number of arguments\n");
 	}
 	return 0;
 }
 
 int command_writemem_k(int number_of_arguments, char **arguments)
 {
-	unsigned char* address = (unsigned char*)strtol(arguments[1], NULL, 16)+KERNEL_BASE;
-	int c, i=0;
+	unsigned char *address = (unsigned char *)strtol(arguments[1], NULL, 16) + KERNEL_BASE;
+	int c, i = 0;
 	int stringLen = strlen(arguments[2]);
 
-	for(i=0;i < stringLen; i++)
+	for (i = 0; i < stringLen; i++)
 	{
 		*address = arguments[2][i];
 		address++;
 	}
 
 	return 0;
-
-
 }
 
 int command_readusermem(int number_of_arguments, char **arguments)
 {
-	//deal with the kernel page directory
+	// deal with the kernel page directory
 	if (number_of_arguments == 2)
 	{
 		unsigned int address = strtol(arguments[1], NULL, 16);
-		unsigned char *ptr = (unsigned char *)(address ) ;
+		unsigned char *ptr = (unsigned char *)(address);
 
 		cprintf("value at address %x = %c\n", ptr, *ptr);
 	}
-	//deal with a page directory of specific environment
+	// deal with a page directory of specific environment
 	else if (number_of_arguments == 3)
 	{
-		int32 envId = strtol(arguments[1],NULL, 10);
-		struct Env* env = NULL;
-		envid2env(envId, &env, 0 );
+		int32 envId = strtol(arguments[1], NULL, 10);
+		struct Env *env = NULL;
+		envid2env(envId, &env, 0);
 
 		int address = strtol(arguments[2], NULL, 16);
 
-		if(env == NULL) return 0;
+		if (env == NULL)
+			return 0;
 
 		uint32 oldDir = rcr3();
-		//lcr3((uint32) K_PHYSICAL_ADDRESS( env->env_pgdir));
-		lcr3((uint32)( env->env_cr3));
+		// lcr3((uint32) K_PHYSICAL_ADDRESS( env->env_pgdir));
+		lcr3((uint32)(env->env_cr3));
 
-		unsigned char *ptr = (unsigned char *)(address) ;
+		unsigned char *ptr = (unsigned char *)(address);
 
-		//Write the given Character
+		// Write the given Character
 		cprintf("value at address %x = %c\n", address, *ptr);
 
 		lcr3(oldDir);
 	}
 	else
 	{
-		cprintf("rum command: invalid number of arguments\n") ;
+		cprintf("rum command: invalid number of arguments\n");
 	}
 	return 0;
-
 }
 
 int command_readmem_k(int number_of_arguments, char **arguments)
 {
-	unsigned char* address = (unsigned char*)strtol(arguments[1], NULL, 16)+KERNEL_BASE;
-	int i=0;
-	cprintf("%c",*address);
+	unsigned char *address = (unsigned char *)strtol(arguments[1], NULL, 16) + KERNEL_BASE;
+	int i = 0;
+	cprintf("%c", *address);
 	cprintf("\n");
 	return 0;
 }
 
-
 int command_readuserblock(int number_of_arguments, char **arguments)
 {
-	int32 envId = strtol(arguments[1],NULL, 10);
-	struct Env* env = NULL;
-	envid2env(envId, &env, 0 );
+	int32 envId = strtol(arguments[1], NULL, 10);
+	struct Env *env = NULL;
+	envid2env(envId, &env, 0);
 
 	int address = strtol(arguments[2], NULL, 16);
 	int nBytes = strtol(arguments[3], NULL, 10);
 
-	unsigned char *ptr = (unsigned char *)(address) ;
-	//Write the given Character
+	unsigned char *ptr = (unsigned char *)(address);
+	// Write the given Character
 
-	if(env == NULL) return 0;
+	if (env == NULL)
+		return 0;
 
 	uint32 oldDir = rcr3();
-	//lcr3((uint32) K_PHYSICAL_ADDRESS( env->env_pgdir));
-	lcr3((uint32)( env->env_cr3));
+	// lcr3((uint32) K_PHYSICAL_ADDRESS( env->env_pgdir));
+	lcr3((uint32)(env->env_cr3));
 
 	int i;
-	for(i = 0;i<nBytes; i++)
+	for (i = 0; i < nBytes; i++)
 	{
 		cprintf("%08x : %02x  %c\n", ptr, *ptr, *ptr);
 		ptr++;
@@ -262,19 +259,20 @@ int command_readuserblock(int number_of_arguments, char **arguments)
 
 int command_remove_table(int number_of_arguments, char **arguments)
 {
-	int32 envId = strtol(arguments[1],NULL, 10);
-	struct Env* env = NULL;
-	envid2env(envId, &env, 0 );
-	if(env == 0) return 0;
+	int32 envId = strtol(arguments[1], NULL, 10);
+	struct Env *env = NULL;
+	envid2env(envId, &env, 0);
+	if (env == 0)
+		return 0;
 
 	uint32 address = strtol(arguments[2], NULL, 16);
-	unsigned char *va = (unsigned char *)(address) ;
+	unsigned char *va = (unsigned char *)(address);
 	uint32 table_pa = env->env_page_directory[PDX(address)] & 0xFFFFF000;
 
-	//remove the table
-	if(USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(va))
+	// remove the table
+	if (USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(va))
 	{
-		kfree((void*)kheap_virtual_address(table_pa));
+		kfree((void *)kheap_virtual_address(table_pa));
 	}
 	else
 	{
@@ -297,19 +295,20 @@ int command_allocuserpage(int number_of_arguments, char **arguments)
 {
 	if (number_of_arguments < 3 || number_of_arguments > 4)
 	{
-		cprintf("aup command: invalid number of arguments\n") ;
+		cprintf("aup command: invalid number of arguments\n");
 		return 0;
 	}
-	int32 envId = strtol(arguments[1],NULL, 10);
-	struct Env* env = NULL;
+	int32 envId = strtol(arguments[1], NULL, 10);
+	struct Env *env = NULL;
 
-	envid2env(envId, &env, 0 );
-	if(env == 0) return 0;
+	envid2env(envId, &env, 0);
+	if (env == 0)
+		return 0;
 
 	uint32 va = strtol(arguments[2], NULL, 16);
 
 	// Allocate a single frame from the free frame list
-	struct FrameInfo * ptr_FrameInfo ;
+	struct FrameInfo *ptr_FrameInfo;
 	int ret = allocate_frame(&ptr_FrameInfo);
 	if (ret == E_NO_MEM)
 	{
@@ -325,15 +324,15 @@ int command_allocuserpage(int number_of_arguments, char **arguments)
 	else if (number_of_arguments == 4)
 	{
 		// Map this frame to the given user virtual address with the given permission
-		uint32 rw ;
+		uint32 rw;
 		if (arguments[3][0] == 'r' || arguments[3][0] == 'R')
-			rw = 0 ;
+			rw = 0;
 		else if (arguments[3][0] == 'w' || arguments[3][0] == 'W')
-			rw = PERM_WRITEABLE ;
+			rw = PERM_WRITEABLE;
 		else
 		{
-			cprintf("aup command: wrong permission (r/w)... will continue as writable\n") ;
-			rw = PERM_WRITEABLE ;
+			cprintf("aup command: wrong permission (r/w)... will continue as writable\n");
+			rw = PERM_WRITEABLE;
 		}
 
 		map_frame(env->env_page_directory, ptr_FrameInfo, va, rw | PERM_USER);
@@ -343,28 +342,28 @@ int command_allocuserpage(int number_of_arguments, char **arguments)
 
 int command_meminfo(int number_of_arguments, char **arguments)
 {
-	struct freeFramesCounters counters =calculate_available_frames();
+	struct freeFramesCounters counters = calculate_available_frames();
 	cprintf("Total available frames = %d\nFree Buffered = %d\nFree Not Buffered = %d\nModified = %d\n",
-			counters.freeBuffered+ counters.freeNotBuffered+ counters.modified, counters.freeBuffered, counters.freeNotBuffered, counters.modified);
+			counters.freeBuffered + counters.freeNotBuffered + counters.modified, counters.freeBuffered, counters.freeNotBuffered, counters.modified);
 
 	cprintf("Num of calls for kheap_virtual_address [in last run] = %d\n", numOfKheapVACalls);
 
 	return 0;
 }
 
-//2020
-struct Env * CreateEnv(int number_of_arguments, char **arguments)
+// 2020
+struct Env *CreateEnv(int number_of_arguments, char **arguments)
 {
-	struct Env* env;
-	uint32 pageWSSize = __PWS_MAX_SIZE;		//arg#3 default
-	uint32 LRUSecondListSize = 0;			//arg#4 default
-	uint32 percent_WS_pages_to_remove = 0;	//arg#5 default
+	struct Env *env;
+	uint32 pageWSSize = __PWS_MAX_SIZE;	   // arg#3 default
+	uint32 LRUSecondListSize = 0;		   // arg#4 default
+	uint32 percent_WS_pages_to_remove = 0; // arg#5 default
 #if USE_KHEAP
 	{
 		switch (number_of_arguments)
 		{
 		case 5:
-			if(!isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
+			if (!isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
 			{
 				cprintf("ERROR: Current Replacement is NOT LRU LISTS, invalid number of args\nUsage: <command> <prog_name> <page_WS_size> [<LRU_second_list_size>] [<DYN_LOC_SCOPE_percent_WS_to_remove>]\naborting...\n");
 				return NULL;
@@ -374,7 +373,7 @@ struct Env * CreateEnv(int number_of_arguments, char **arguments)
 			pageWSSize = strtol(arguments[2], NULL, 10);
 			break;
 		case 4:
-			if(!isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
+			if (!isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
 			{
 				percent_WS_pages_to_remove = strtol(arguments[3], NULL, 10);
 			}
@@ -385,7 +384,7 @@ struct Env * CreateEnv(int number_of_arguments, char **arguments)
 			pageWSSize = strtol(arguments[2], NULL, 10);
 			break;
 		case 3:
-			if(isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
+			if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
 			{
 				cprintf("ERROR: Current Replacement is LRU LISTS, Please specify a working set size in the 3rd arg and LRU second list size in the 4th arg, aborting.\n");
 				return NULL;
@@ -398,12 +397,12 @@ struct Env * CreateEnv(int number_of_arguments, char **arguments)
 
 			break;
 		}
-		if(pageWSSize > __PWS_MAX_SIZE)
+		if (pageWSSize > __PWS_MAX_SIZE)
 		{
 			cprintf("ERROR: size of WS must be less than or equal to %d... aborting", __PWS_MAX_SIZE);
 			return NULL;
 		}
-		if(isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
+		if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
 		{
 			if (LRUSecondListSize > pageWSSize - 1)
 			{
@@ -412,7 +411,6 @@ struct Env * CreateEnv(int number_of_arguments, char **arguments)
 			}
 		}
 		assert(percent_WS_pages_to_remove >= 0 && percent_WS_pages_to_remove <= 100);
-
 	}
 #else
 	{
@@ -429,7 +427,7 @@ struct Env * CreateEnv(int number_of_arguments, char **arguments)
 
 			break;
 		}
-		if(isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
+		if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
 		{
 			LRUSecondListSize = __LRU_SNDLST_SIZE;
 		}
@@ -446,8 +444,9 @@ int command_run_program(int number_of_arguments, char **arguments)
 	//[1] Create and initialize a new environment for the program to be run
 	struct Env *env = CreateEnv(number_of_arguments, arguments);
 
-	if(env == NULL) return 0;
-	cprintf("\nEnvironment Id= %d\n",env->env_id);
+	if (env == NULL)
+		return 0;
+	cprintf("\nEnvironment Id= %d\n", env->env_id);
 
 	numOfKheapVACalls = 0;
 
@@ -460,7 +459,7 @@ int command_run_program(int number_of_arguments, char **arguments)
 
 int command_kill_program(int number_of_arguments, char **arguments)
 {
-	int32 envId = strtol(arguments[1],NULL, 10);
+	int32 envId = strtol(arguments[1], NULL, 10);
 
 	sched_kill_env(envId);
 
@@ -471,11 +470,11 @@ int commnad_load_env(int number_of_arguments, char **arguments)
 {
 	struct Env *env = CreateEnv(number_of_arguments, arguments);
 	if (env == NULL)
-		return 0 ;
+		return 0;
 
-	sched_new_env(env) ;
+	sched_new_env(env);
 
-	cprintf("\nEnvironment Id= %d\n",env->env_id);
+	cprintf("\nEnvironment Id= %d\n", env->env_id);
 	return 0;
 }
 
@@ -484,21 +483,21 @@ int command_run_all(int number_of_arguments, char **arguments)
 	numOfKheapVACalls = 0;
 	sched_run_all();
 
-	return 0 ;
+	return 0;
 }
 
 int command_print_all(int number_of_arguments, char **arguments)
 {
 	sched_print_all();
 
-	return 0 ;
+	return 0;
 }
 
 int command_kill_all(int number_of_arguments, char **arguments)
 {
 	sched_kill_all();
 
-	return 0 ;
+	return 0;
 }
 
 int command_set_page_rep_LRU(int number_of_arguments, char **arguments)
@@ -508,7 +507,7 @@ int command_set_page_rep_LRU(int number_of_arguments, char **arguments)
 		cprintf("ERROR: please specify the LRU Approx Type (1: TimeStamp Approx, 2: Lists Approx), aborting...\n");
 		return 0;
 	}
-	int LRU_TYPE = strtol(arguments[1], NULL, 10) ;
+	int LRU_TYPE = strtol(arguments[1], NULL, 10);
 	if (LRU_TYPE == PG_REP_LRU_TIME_APPROX)
 	{
 		setPageReplacmentAlgorithmLRU(LRU_TYPE);
@@ -526,7 +525,7 @@ int command_set_page_rep_LRU(int number_of_arguments, char **arguments)
 	}
 	return 0;
 }
-//2021
+// 2021
 int command_set_page_rep_nthCLOCK(int number_of_arguments, char **arguments)
 {
 	uint32 PageWSMaxSweeps = strtol(arguments[1], NULL, 10);
@@ -555,7 +554,7 @@ int command_set_page_rep_ModifiedCLOCK(int number_of_arguments, char **arguments
 	return 0;
 }
 
-/*2018*///BEGIN======================================================
+/*2018*/ // BEGIN======================================================
 int command_sch_RR(int number_of_arguments, char **arguments)
 {
 	uint8 quantum = strtol(arguments[1], NULL, 10);
@@ -567,18 +566,18 @@ int command_sch_RR(int number_of_arguments, char **arguments)
 int command_sch_MLFQ(int number_of_arguments, char **arguments)
 {
 	uint8 numOfLevels = strtol(arguments[1], NULL, 10);
-	uint8 quantumOfEachLevel[MAX_ARGUMENTS - 2] ;
-	for (int i = 2 ; i < number_of_arguments ; i++)
+	uint8 quantumOfEachLevel[MAX_ARGUMENTS - 2];
+	for (int i = 2; i < number_of_arguments; i++)
 	{
-		quantumOfEachLevel[i-2] = strtol(arguments[i], NULL, 10);
+		quantumOfEachLevel[i - 2] = strtol(arguments[i], NULL, 10);
 	}
 
 	sched_init_MLFQ(numOfLevels, quantumOfEachLevel);
 
 	cprintf("Scheduler is now set to MLFQ with quantums: ");
-	for (int i = 0 ; i < num_of_ready_queues; i++)
+	for (int i = 0; i < num_of_ready_queues; i++)
 	{
-		cprintf("%d   ", quantums[i]) ;
+		cprintf("%d   ", quantums[i]);
 	}
 	cprintf("\n");
 	return 0;
@@ -599,9 +598,9 @@ int command_print_sch_method(int number_of_arguments, char **arguments)
 	if (isSchedMethodMLFQ())
 	{
 		cprintf("Current scheduler method is MLFQ with quantums: ");
-		for (int i = 0 ; i < num_of_ready_queues; i++)
+		for (int i = 0; i < num_of_ready_queues; i++)
 		{
-			cprintf("%d   ", quantums[i]) ;
+			cprintf("%d   ", quantums[i]);
 		}
 		cprintf("\n");
 	}
@@ -620,7 +619,7 @@ int command_print_sch_method(int number_of_arguments, char **arguments)
 }
 int command_sch_test(int number_of_arguments, char **arguments)
 {
-	int status  = strtol(arguments[1], NULL, 10);
+	int status = strtol(arguments[1], NULL, 10);
 	chksch(status);
 	if (status == 0)
 		cprintf("Testing the scheduler is TURNED OFF\n");
@@ -629,10 +628,9 @@ int command_sch_test(int number_of_arguments, char **arguments)
 	return 0;
 }
 
-/*2018*///END======================================================
+/*2018*/ // END======================================================
 
-
-/*2015*///BEGIN======================================================
+/*2015*/ // BEGIN======================================================
 int command_print_page_rep(int number_of_arguments, char **arguments)
 {
 	if (isPageReplacmentAlgorithmCLOCK())
@@ -650,7 +648,6 @@ int command_print_page_rep(int number_of_arguments, char **arguments)
 
 	return 0;
 }
-
 
 int command_set_uheap_plac_FIRSTFIT(int number_of_arguments, char **arguments)
 {
@@ -695,9 +692,9 @@ int command_print_uheap_plac(int number_of_arguments, char **arguments)
 	return 0;
 }
 
-/*2015*///END======================================================
+/*2015*/ // END======================================================
 
-/*2017*///BEGIN======================================================
+/*2017*/ // BEGIN======================================================
 
 int command_set_kheap_plac_CONTALLOC(int number_of_arguments, char **arguments)
 {
@@ -751,11 +748,11 @@ int command_print_kheap_plac(int number_of_arguments, char **arguments)
 	return 0;
 }
 
-/*2017*///END======================================================
+/*2017*/ // END======================================================
 
 int command_disable_modified_buffer(int number_of_arguments, char **arguments)
 {
-	if(!isBufferingEnabled())
+	if (!isBufferingEnabled())
 	{
 		cprintf("Buffering is not enabled. Please enable buffering first.\n");
 	}
@@ -767,10 +764,9 @@ int command_disable_modified_buffer(int number_of_arguments, char **arguments)
 	return 0;
 }
 
-
 int command_enable_modified_buffer(int number_of_arguments, char **arguments)
 {
-	if(!isBufferingEnabled())
+	if (!isBufferingEnabled())
 	{
 		cprintf("Buffering is not enabled. Please enable buffering first.\n");
 	}
@@ -792,12 +788,11 @@ int command_disable_buffering(int number_of_arguments, char **arguments)
 	return 0;
 }
 
-
 int command_enable_buffering(int number_of_arguments, char **arguments)
 {
 	enableBuffering(1);
 	enableModifiedBuffer(1);
-	if(getModifiedBufferLength() == 0)
+	if (getModifiedBufferLength() == 0)
 	{
 		cprintf("Modified buffer enabled but with length = 0\n");
 		char str[100];
@@ -811,7 +806,7 @@ int command_enable_buffering(int number_of_arguments, char **arguments)
 
 int command_set_modified_buffer_length(int number_of_arguments, char **arguments)
 {
-	if(!isBufferingEnabled())
+	if (!isBufferingEnabled())
 	{
 		cprintf("Buffering is not enabled. Please enable buffering to use the modified buffer.\n");
 	}
@@ -826,7 +821,7 @@ int command_set_modified_buffer_length(int number_of_arguments, char **arguments
 
 int command_get_modified_buffer_length(int number_of_arguments, char **arguments)
 {
-	if(!isBufferingEnabled())
+	if (!isBufferingEnabled())
 	{
 		cprintf("Buffering is not enabled. Please enable buffering to use the modified buffer.\n");
 	}

@@ -430,29 +430,73 @@ int execute_command(char *command_string)
 
 int process_command(int number_of_arguments, char **arguments)
 {
-	// TODO: [PROJECT'23.MS1 - #2] [1] PLAY WITH CODE! - process_command
-	// Comment the following line before start coding...
-	int command_found = 0;
-    int i ;
-    for (i = 0; i < NUM_OF_COMMANDS; i++)
-    {
-        if (strcmp(arguments[0], commands[i].name) == 0)
-        {
-            command_found = 1;
-            break;
-        }
-    }
 
-    if(command_found)
-    {
-        int return_value;
-        return_value = commands[i].function_to_execute(number_of_arguments, arguments);
-        return return_value;
-    }
-    else
-    {
-        //if not found, then it's unknown command
-        cprintf("Unknown command '%s'\n", arguments[0]);
-        return 0;
-    }
+	LIST_INIT(&foundCommands);
+	
+	for (int i = 0; i < NUM_OF_COMMANDS; i++)
+	{
+		// command found
+		if (strcmp(arguments[0], commands[i].name) == 0)
+		{
+			// cprintf("%d\t%d\n", number_of_arguments, commands[i].num_of_args);
+
+			if (number_of_arguments - 1 == commands[i].num_of_args)
+			{
+				return i;
+			}
+			else if (commands[i].num_of_args == -1 && number_of_arguments >= 2)
+			{
+				return i;
+			}
+			else if (commands[i].num_of_args != number_of_arguments)
+			{
+				LIST_INSERT_HEAD(&foundCommands, &commands[i]);
+				return CMD_INV_NUM_ARGS;
+			}
+		}
+	}
+
+	// cprintf("1");
+
+	for (int i = 0; i < NUM_OF_COMMANDS; i++)
+	{
+		uint8 bool = 0;
+		char *cmd_terminal = commands[i].name;
+		// strcpy(cmd_terminal, commands[i].name);
+		// cprintf("2");
+		for (int j = 0; j < strlen(arguments[0]); j++)
+		{
+			char *commandsCopy = strfind(cmd_terminal, arguments[0][j]);
+
+			// cprintf("%s\n", *commandsCopy);
+			// cprintf("%c\n", cmd_terminal);
+			// cprintf("%d\t%d\t%s\n", i, j, cmd_terminal);
+
+			// cprintf("%x\n", commandsCopy);
+			if (*commandsCopy != '\0')
+			{
+				cmd_terminal = commandsCopy++;
+			}
+			else
+			{
+				bool = 1;
+				break;
+			}
+		}
+		// cprintf("3");
+		if (bool == 0)
+		{
+			// cprintf("%s", commands[i].name);
+			if (LIST_SIZE(&foundCommands) == 0)
+				LIST_INSERT_HEAD(&foundCommands, &commands[i]);
+			else
+				LIST_INSERT_AFTER(&foundCommands, LIST_LAST(&foundCommands), &commands[i]);
+			// LIST_INSERT_TAIL(&foundCommands, &commands[i]);
+		}
+	}
+
+	if (LIST_SIZE(&foundCommands) == 0)
+		return CMD_INVALID;
+	else
+		return CMD_MATCHED;
 }
