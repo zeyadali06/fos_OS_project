@@ -478,7 +478,8 @@ int process_command(int number_of_arguments, char **arguments)
 			// cprintf("%x\n", commandsCopy);
 			if (*commandsCopy != '\0')
 			{
-				cmd_terminal = commandsCopy++;
+				cmd_terminal = commandsCopy;
+				cmd_terminal++;
 			}
 			else
 			{
