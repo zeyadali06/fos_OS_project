@@ -192,19 +192,19 @@ void free_block(void *va)
 	return;
 	struct BlockMetaData *myblc = ((struct BlockMetaData *)va - 1) ;
 	if (myblc->is_free==0){
-		cprintf("mm\n");
+		
 		myblc->is_free=1;
 		
-		cprintf(" curr %d\n",myblc->size);
+		
 		if (LIST_PREV(myblc)!=NULL){
 			
 		 if(LIST_PREV(myblc)->is_free){
-		 	cprintf(" prev %d\n",LIST_PREV(myblc)->size);
+		 	
 			LIST_PREV(myblc)->size+=myblc->size;
 
 			myblc->size=0;
 			myblc->is_free=0;
-			cprintf("prev after merge %d\n",LIST_PREV(myblc)->size);
+			
 			if (LIST_NEXT(myblc)!=NULL)
 				LIST_NEXT(LIST_PREV(myblc))=LIST_NEXT(myblc);
 			else
@@ -217,11 +217,11 @@ void free_block(void *va)
 		if (LIST_NEXT(myblc)!=NULL){
 			
 		if (LIST_NEXT(myblc)->is_free){
-			cprintf(" next %d\n",LIST_NEXT(myblc)->size);
+		
 			myblc->size+=LIST_NEXT(myblc)->size;
 			LIST_NEXT(myblc)->is_free=0;
 			LIST_NEXT(myblc)->size=0;
-			cprintf("next after merge %d\n",LIST_NEXT(myblc)->size);
+	
 			if(LIST_NEXT(LIST_NEXT(myblc))!=NULL)
 			LIST_NEXT(myblc)=LIST_NEXT(LIST_NEXT(myblc));
 			else
@@ -232,7 +232,7 @@ void free_block(void *va)
 		}
 		}
 		
-			cprintf(" curr after merge %d\n",myblc->size);
+		
 	 }
 	
 	//panic("free_block is not implemented yet");
