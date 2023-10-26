@@ -331,7 +331,7 @@ void run_command_prompt()
 		memset(command_line, 0, sizeof(command_line));
 		command_prompt_readline("FOS> ", command_line);
 		// test_realloc_block_FF();
-		test_alloc_block_FF();
+		//test_alloc_block_FF();
 
 		// parse and execute the command
 		if (command_line != NULL)
