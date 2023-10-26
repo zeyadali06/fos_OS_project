@@ -101,7 +101,7 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 	struct BlockMetaData *FB = (struct BlockMetaData *)daStart;
 	FB->size = initSizeOfAllocatedSpace;
 	FB->is_free = 1;
-
+	LIST_INIT(&list);
 	LIST_INSERT_HEAD(&list, FB);
 }
 
@@ -226,6 +226,7 @@ void free_block(void *va)
 			LIST_NEXT(myblc)=LIST_NEXT(LIST_NEXT(myblc));
 			else
 			LIST_NEXT(myblc)=NULL;
+
 			//LIST_REMOVE(&list, LIST_NEXT(myblc));
 			
 		}
