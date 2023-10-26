@@ -529,8 +529,8 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		//=====================================================================
 
 	case SYS_sbrk:
-		sys_sbrk(a1);
-		return 0;
+		
+		return (uint32)sys_sbrk(a1);
 		break;
 	case SYS_allocate_user_mem:
 		sys_allocate_user_mem(a1, a2);
