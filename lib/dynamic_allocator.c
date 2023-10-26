@@ -188,45 +188,53 @@ void *alloc_block_NF(uint32 size)
 void free_block(void *va)
 {
 	// TODO: [PROJECT'23.MS1 - #7] [3] DYNAMIC ALLOCATOR - free_block()
-	// panic("free_block is not implemented yet");
-	if (va == NULL)
-	{
-		return;
-	}
+	if (va==NULL)
+	return;
+	struct BlockMetaData *myblc = ((struct BlockMetaData *)va - 1) ;
+	if (myblc->is_free==0){
+		cprintf("mm\n");
+		myblc->is_free=1;
+		
+		cprintf(" curr %d\n",myblc->size);
+		if (LIST_PREV(myblc)!=NULL){
+			
+		 if(LIST_PREV(myblc)->is_free){
+		 	cprintf(" prev %d\n",LIST_PREV(myblc)->size);
+			LIST_PREV(myblc)->size+=myblc->size;
 
-	struct BlockMetaData *currBlk = ((struct BlockMetaData *)va - 1);
-
-	// cprintf("%x   %x    %d   ", currBlk, currBlk->size, currBlk->is_free);
-	if (currBlk->is_free == 0)
-	{
-		if (LIST_PREV(currBlk) != NULL && LIST_NEXT(currBlk) != NULL && LIST_PREV(currBlk)->is_free == 1 && LIST_NEXT(currBlk)->is_free == 1)
-		{
-			// cprintf("1ok\n");
-			LIST_PREV(currBlk)->size = LIST_PREV(currBlk)->size + currBlk->size + LIST_NEXT(currBlk)->size;
-			LIST_PREV(currBlk)->is_free = 1;
-			LIST_REMOVE(&list, currBlk);
-			LIST_REMOVE(&list, LIST_NEXT(currBlk));
+			myblc->size=0;
+			myblc->is_free=0;
+			cprintf("prev after merge %d\n",LIST_PREV(myblc)->size);
+			if (LIST_NEXT(myblc)!=NULL)
+				LIST_NEXT(LIST_PREV(myblc))=LIST_NEXT(myblc);
+			else
+				LIST_NEXT(LIST_PREV(myblc))=NULL;
+				myblc=LIST_PREV(myblc);
+		 	//LIST_REMOVE(&list,LIST_PREV(myblc));
+			
+		 }
 		}
-		else if (LIST_PREV(currBlk) != NULL && LIST_PREV(currBlk)->is_free == 1)
-		{
-			// cprintf("2ok\n");
-			LIST_PREV(currBlk)->size = LIST_PREV(currBlk)->size + currBlk->size;
-			LIST_PREV(currBlk)->is_free = 1;
-			LIST_REMOVE(&list, currBlk);
+		if (LIST_NEXT(myblc)!=NULL){
+			
+		if (LIST_NEXT(myblc)->is_free){
+			cprintf(" next %d\n",LIST_NEXT(myblc)->size);
+			myblc->size+=LIST_NEXT(myblc)->size;
+			LIST_NEXT(myblc)->is_free=0;
+			LIST_NEXT(myblc)->size=0;
+			cprintf("next after merge %d\n",LIST_NEXT(myblc)->size);
+			if(LIST_NEXT(LIST_NEXT(myblc))!=NULL)
+			LIST_NEXT(myblc)=LIST_NEXT(LIST_NEXT(myblc));
+			else
+			LIST_NEXT(myblc)=NULL;
+			//LIST_REMOVE(&list, LIST_NEXT(myblc));
+			
 		}
-		else if (LIST_NEXT(currBlk) != NULL && LIST_NEXT(currBlk)->is_free == 1)
-		{
-			// cprintf("3ok\n");
-			currBlk->size = currBlk->size + LIST_NEXT(currBlk)->size;
-			currBlk->is_free = 1;
-			LIST_REMOVE(&list, LIST_NEXT(currBlk));
 		}
-		else
-		{
-			// cprintf("4ok\n");
-			currBlk->is_free = 1;
-		}
-	}
+		
+			cprintf(" curr after merge %d\n",myblc->size);
+	 }
+	
+	//panic("free_block is not implemented yet");
 }
 
 // void free_block(void *va)
