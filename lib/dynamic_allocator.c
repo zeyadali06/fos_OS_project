@@ -83,7 +83,7 @@ void print_blocks_list(struct MemBlock_LIST list)
 //==================================
 // [1] INITIALIZE DYNAMIC ALLOCATOR:
 //==================================
- struct MemBlock_LIST list;
+
 void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpace)
 {
 	//=========================================
@@ -98,22 +98,66 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 	// IB->size = initSizeOfAllocatedSpace;
 	// IB->is_free = 1;
 
-	struct BlockMetaData * FB = (struct BlockMetaData *) daStart;
+	struct BlockMetaData *FB = (struct BlockMetaData *)daStart;
 	FB->size = initSizeOfAllocatedSpace;
 	FB->is_free = 1;
 
-	LIST_INSERT_HEAD(&list,FB);
-
+	LIST_INSERT_HEAD(&list, FB);
 }
+
 //=========================================
 // [4] ALLOCATE BLOCK BY FIRST FIT:
 //=========================================
 void *alloc_block_FF(uint32 size)
 {
 	// TODO: [PROJECT'23.MS1 - #6] [3] DYNAMIC ALLOCATOR - alloc_block_FF()
-	panic("alloc_block_FF is not implemented yet");
-	return NULL;
+	// panic("alloc_block_FF is not implemented yet");
+
+	struct BlockMetaData *blkPtr;
+
+	if (size == 0)
+	{
+		return NULL;
+	}
+
+	LIST_FOREACH(blkPtr, &list)
+	{
+		if (blkPtr->is_free == 1)
+		{
+			// cprintf("ptrsize : %d size : %d \n", blkPtr->size, size + sizeOfMetaData());
+
+			if (blkPtr->size == size + sizeOfMetaData())
+			{
+				blkPtr->is_free = 0;
+				// struct BlockMetaData *retptr = (void *)((struct BlockMetaData *)blkPtr + 1);
+				return ((void *)blkPtr + sizeOfMetaData());
+			}
+
+			else if (blkPtr->size > size + sizeOfMetaData())
+			{
+				struct BlockMetaData *freeMD = (struct BlockMetaData *)((void *)blkPtr + size + sizeOfMetaData());
+				freeMD->is_free = 1;
+				freeMD->size = blkPtr->size - (size + sizeOfMetaData());
+				LIST_INSERT_AFTER(&list, blkPtr, freeMD);
+				blkPtr->is_free = 0;
+				blkPtr->size = size;
+				// cprintf("%x %x %x %x\n", (void *)blkPtr, (void *)((void *)blkPtr + sizeOfMetaData()), freeMD, size);
+				// cprintf("%x %x %x %x\n", (void *)((struct BlockMetaData *)blkPtr + 1), size, blkPtr->size, freeMD->size);
+				return ((void *)blkPtr + sizeOfMetaData());
+			}
+		}
+	}
+
+	if (sbrk(size) != (void *)-1)
+	{
+		return alloc_block_FF(size);
+	}
+	else
+	{
+		return NULL;
+	}
 }
+
 //=========================================
 // [5] ALLOCATE BLOCK BY BEST FIT:
 //=========================================
@@ -157,6 +201,44 @@ void free_block(void *va)
 void *realloc_block_FF(void *va, uint32 new_size)
 {
 	// TODO: [PROJECT'23.MS1 - #8] [3] DYNAMIC ALLOCATOR - realloc_block_FF()
-	panic("realloc_block_FF is not implemented yet");
+	// panic("realloc_block_FF is not implemented yet");
+
+	// print_blocks_list(list);
+
+	if (va == NULL)
+	{
+		return alloc_block(new_size, DA_FF);
+	}
+	else if (va != NULL && new_size == 0)
+	{
+		free_block(va);
+		return NULL;
+	}
+	else
+	{
+		struct BlockMetaData *currentBlk = ((struct BlockMetaData *)va - 1);
+
+		// decrease size
+		if (new_size < get_block_size(va))
+		{
+
+			// struct BlockMetaData *nextBlk = LIST_NEXT(currentBlk);
+			// struct BlockMetaData *prevBlk = LIST_PREV(currentBlk);
+			if ((get_block_size(va) - new_size) <= sizeOfMetaData())
+			{
+				void *v = alloc_block(new_size, DA_FF);
+				free_block(va);
+				return v;
+			}
+			else
+			{
+			}
+		}
+		// increase size
+		else if (new_size > get_block_size(va))
+		{
+		}
+	}
+
 	return NULL;
 }
