@@ -60,7 +60,6 @@ void *alloc_block(uint32 size, int ALLOC_STRATEGY)
 //===========================
 // 4) PRINT BLOCKS LIST:
 //===========================
-
 void print_blocks_list(struct MemBlock_LIST list)
 {
 	cprintf("=========================================\n");
@@ -72,6 +71,7 @@ void print_blocks_list(struct MemBlock_LIST list)
 	}
 	cprintf("=========================================\n");
 }
+
 //
 ////********************************************************************************//
 ////********************************************************************************//
@@ -124,15 +124,12 @@ void *alloc_block_FF(uint32 size)
 	{
 		if (blkPtr->is_free == 1)
 		{
-			// cprintf("ptrsize : %d size : %d \n", blkPtr->size, size + sizeOfMetaData());
-
 			if (blkPtr->size == size + sizeOfMetaData())
 			{
 				blkPtr->is_free = 0;
-				// struct BlockMetaData *retptr = (void *)((struct BlockMetaData *)blkPtr + 1);
-				return ((void *)blkPtr + sizeOfMetaData());
+				// cprintf("%x %x %x %x\n", (void *)blkPtr, ((void *)blkPtr + sizeOfMetaData()), freeMD, size);
+				return (void *)((void *)blkPtr + sizeOfMetaData());
 			}
-
 			else if (blkPtr->size > size + sizeOfMetaData())
 			{
 				struct BlockMetaData *freeMD = (struct BlockMetaData *)((void *)blkPtr + size + sizeOfMetaData());
@@ -140,15 +137,14 @@ void *alloc_block_FF(uint32 size)
 				freeMD->size = blkPtr->size - (size + sizeOfMetaData());
 				LIST_INSERT_AFTER(&list, blkPtr, freeMD);
 				blkPtr->is_free = 0;
-				blkPtr->size = size;
+				blkPtr->size = size + sizeOfMetaData();
 				// cprintf("%x %x %x %x\n", (void *)blkPtr, (void *)((void *)blkPtr + sizeOfMetaData()), freeMD, size);
-				// cprintf("%x %x %x %x\n", (void *)((struct BlockMetaData *)blkPtr + 1), size, blkPtr->size, freeMD->size);
-				return ((void *)blkPtr + sizeOfMetaData());
+				return (void *)((void *)blkPtr + sizeOfMetaData());
 			}
 		}
 	}
 
-	if (sbrk(size) != (void *)-1)
+	if (sbrk(size + sizeOfMetaData()) != (void *)-1)
 	{
 		return alloc_block_FF(size);
 	}
@@ -186,14 +182,89 @@ void *alloc_block_NF(uint32 size)
 	return NULL;
 }
 
-//===================================================
+// ===================================================
 // [8] FREE BLOCK WITH COALESCING:
-//===================================================
+// ===================================================
 void free_block(void *va)
 {
 	// TODO: [PROJECT'23.MS1 - #7] [3] DYNAMIC ALLOCATOR - free_block()
-	panic("free_block is not implemented yet");
+	// panic("free_block is not implemented yet");
+	if (va == NULL)
+	{
+		return;
+	}
+
+	struct BlockMetaData *currBlk = ((struct BlockMetaData *)va - 1);
+
+	// cprintf("%x   %x    %d   ", currBlk, currBlk->size, currBlk->is_free);
+	if (currBlk->is_free == 0)
+	{
+		if (LIST_PREV(currBlk) != NULL && LIST_NEXT(currBlk) != NULL && LIST_PREV(currBlk)->is_free == 1 && LIST_NEXT(currBlk)->is_free == 1)
+		{
+			// cprintf("1ok\n");
+			LIST_PREV(currBlk)->size = LIST_PREV(currBlk)->size + currBlk->size + LIST_NEXT(currBlk)->size;
+			LIST_PREV(currBlk)->is_free = 1;
+			LIST_REMOVE(&list, currBlk);
+			LIST_REMOVE(&list, LIST_NEXT(currBlk));
+		}
+		else if (LIST_PREV(currBlk) != NULL && LIST_PREV(currBlk)->is_free == 1)
+		{
+			// cprintf("2ok\n");
+			LIST_PREV(currBlk)->size = LIST_PREV(currBlk)->size + currBlk->size;
+			LIST_PREV(currBlk)->is_free = 1;
+			LIST_REMOVE(&list, currBlk);
+		}
+		else if (LIST_NEXT(currBlk) != NULL && LIST_NEXT(currBlk)->is_free == 1)
+		{
+			// cprintf("3ok\n");
+			currBlk->size = currBlk->size + LIST_NEXT(currBlk)->size;
+			currBlk->is_free = 1;
+			LIST_REMOVE(&list, LIST_NEXT(currBlk));
+		}
+		else
+		{
+			// cprintf("4ok\n");
+			currBlk->is_free = 1;
+		}
+	}
 }
+
+// void free_block(void *va)
+// {
+// 	// TODO: [PROJECT'23.MS1 - #7] [3] DYNAMIC ALLOCATOR - free_block()
+// 	// panic("free_block is not implemented yet");
+// 	struct BlockMetaData *myblc = ((struct BlockMetaData *)va - 1);
+// 	if (myblc->is_free == 0)
+// 	{
+// 		myblc->is_free = 1;
+// 		cprintf("curr %d\n", myblc->size);
+// 		if (LIST_PREV(myblc) != NULL)
+// 		{
+// 			if (LIST_PREV(myblc)->is_free)
+// 			{
+// 				cprintf("prev %d\n", LIST_PREV(myblc)->size);
+// 				myblc->size += LIST_PREV(myblc)->size;
+// 				LIST_PREV(myblc)->size = 0;
+// 				LIST_PREV(myblc)->is_free = 0;
+// 				cprintf("prev after merge %d\n", LIST_PREV(myblc)->size);
+// 				// LIST_REMOVE(&list,LIST_PREV(myblc));
+// 			}
+// 		}
+// 		if (LIST_NEXT(myblc) != NULL)
+// 		{
+// 			if (LIST_NEXT(myblc)->is_free)
+// 			{
+// 				cprintf("next %d\n", LIST_NEXT(myblc)->size);
+// 				myblc->size += LIST_NEXT(myblc)->size;
+// 				LIST_NEXT(myblc)->is_free = 0;
+// 				LIST_NEXT(myblc)->size = 0;
+// 				cprintf("next after merge %d\n", LIST_NEXT(myblc)->size);
+// 				// LIST_REMOVE(&list, LIST_NEXT(myblc));
+// 			}
+// 		}
+// 		cprintf("curr after merge %d\n", myblc->size);
+// 	}
+// }
 
 //=========================================
 // [4] REALLOCATE BLOCK BY FIRST FIT:
@@ -201,7 +272,7 @@ void free_block(void *va)
 void *realloc_block_FF(void *va, uint32 new_size)
 {
 	// TODO: [PROJECT'23.MS1 - #8] [3] DYNAMIC ALLOCATOR - realloc_block_FF()
-	// panic("realloc_block_FF is not implemented yet");
+	panic("realloc_block_FF is not implemented yet");
 
 	// print_blocks_list(list);
 
