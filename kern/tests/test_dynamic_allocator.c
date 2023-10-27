@@ -1431,8 +1431,8 @@ void test_realloc_block_FF()
 	{
 		eval += 30;
 	}
-
 	cprintf("test realloc_block with FIRST FIT completed. Evaluation = %d%\n", eval);
+	// cprintf("%d\n", LIST_SIZE(&list));
 }
 
 void test_realloc_block_FF_COMPLETE()
@@ -1442,7 +1442,41 @@ void test_realloc_block_FF_COMPLETE()
 	return;
 #endif
 
-	panic("this is unseen test");
+	// int initAllocatedSpace = 3 * Mega;
+	// initialize_dynamic_allocator(KERNEL_HEAP_START, initAllocatedSpace);
+
+	// print_blocks_list(list);
+	cprintf("%d\n", LIST_SIZE(&list));
+
+	void *va;
+
+	struct BlockMetaData *currBlk;
+	LIST_FOREACH(currBlk, &list)
+	{
+		cprintf("%x   ", LIST_NEXT(currBlk));
+		cprintf("%x\n", LIST_NEXT(LIST_NEXT(currBlk)));
+		if (currBlk == (struct BlockMetaData *)320)
+		{
+			// cprintf("ok\n");
+			cprintf("%x  ", currBlk);
+			cprintf("%d  ", currBlk->size);
+			cprintf("%d\n", currBlk->is_free);
+			// cprintf("%d\n", LIST_NEXT(currBlk)->prev_next_info.le_next->is_free);
+		}
+
+		// cprintf("%x\n", LIST_NEXT(LIST_NEXT(currBlk)));
+		// cprintf("%x\n", LIST_NEXT(LIST_NEXT(LIST_NEXT(currBlk))));
+		// cprintf("%x\n", LIST_NEXT(LIST_NEXT(LIST_NEXT(LIST_NEXT(currBlk)))));
+
+		// if ()
+		if (currBlk->size == 1 && LIST_PREV(currBlk)->size > 32)
+		{
+			va = realloc_block_FF((void *)((struct BlockMetaData *)LIST_PREV(currBlk) + 1), LIST_PREV(currBlk)->size - 16);
+			break;
+		}
+	}
+
+	// panic("this is unseen test");
 }
 
 /********************Helper Functions***************************/
