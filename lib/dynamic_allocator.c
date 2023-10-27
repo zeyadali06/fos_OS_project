@@ -188,92 +188,55 @@ void *alloc_block_NF(uint32 size)
 void free_block(void *va)
 {
 	// TODO: [PROJECT'23.MS1 - #7] [3] DYNAMIC ALLOCATOR - free_block()
-	if (va==NULL)
-	return;
-	struct BlockMetaData *myblc = ((struct BlockMetaData *)va - 1) ;
-	if (myblc->is_free==0){
-		
-		myblc->is_free=1;
-		
-		
-		if (LIST_PREV(myblc)!=NULL){
-			
-		 if(LIST_PREV(myblc)->is_free){
-		 	
-			LIST_PREV(myblc)->size+=myblc->size;
+	if (va == NULL)
+		return;
+	struct BlockMetaData *myblc = ((struct BlockMetaData *)va - 1);
+	if (myblc->is_free == 0)
+	{
 
-			myblc->size=0;
-			myblc->is_free=0;
-			
-			if (LIST_NEXT(myblc)!=NULL)
-				LIST_NEXT(LIST_PREV(myblc))=LIST_NEXT(myblc);
-			else
-				LIST_NEXT(LIST_PREV(myblc))=NULL;
-				myblc=LIST_PREV(myblc);
-		 	//LIST_REMOVE(&list,LIST_PREV(myblc));
-			
-		 }
-		}
-		if (LIST_NEXT(myblc)!=NULL){
-			
-		if (LIST_NEXT(myblc)->is_free){
-		
-			myblc->size+=LIST_NEXT(myblc)->size;
-			LIST_NEXT(myblc)->is_free=0;
-			LIST_NEXT(myblc)->size=0;
-	
-			if(LIST_NEXT(LIST_NEXT(myblc))!=NULL)
-			LIST_NEXT(myblc)=LIST_NEXT(LIST_NEXT(myblc));
-			else
-			LIST_NEXT(myblc)=NULL;
+		myblc->is_free = 1;
 
-			//LIST_REMOVE(&list, LIST_NEXT(myblc));
-			
+		if (LIST_PREV(myblc) != NULL)
+		{
+
+			if (LIST_PREV(myblc)->is_free)
+			{
+
+				LIST_PREV(myblc)->size += myblc->size;
+
+				myblc->size = 0;
+				myblc->is_free = 0;
+
+				if (LIST_NEXT(myblc) != NULL)
+					LIST_NEXT(LIST_PREV(myblc)) = LIST_NEXT(myblc);
+				else
+					LIST_NEXT(LIST_PREV(myblc)) = NULL;
+				myblc = LIST_PREV(myblc);
+				// LIST_REMOVE(&list,LIST_PREV(myblc));
+			}
 		}
+		if (LIST_NEXT(myblc) != NULL)
+		{
+
+			if (LIST_NEXT(myblc)->is_free)
+			{
+
+				myblc->size += LIST_NEXT(myblc)->size;
+				LIST_NEXT(myblc)->is_free = 0;
+				LIST_NEXT(myblc)->size = 0;
+
+				if (LIST_NEXT(LIST_NEXT(myblc)) != NULL)
+					LIST_NEXT(myblc) = LIST_NEXT(LIST_NEXT(myblc));
+				else
+					LIST_NEXT(myblc) = NULL;
+
+				// LIST_REMOVE(&list, LIST_NEXT(myblc));
+			}
 		}
-		
-		
-	 }
-	
-	//panic("free_block is not implemented yet");
+	}
+
+	// panic("free_block is not implemented yet");
 }
-
-// void free_block(void *va)
-// {
-// 	// TODO: [PROJECT'23.MS1 - #7] [3] DYNAMIC ALLOCATOR - free_block()
-// 	// panic("free_block is not implemented yet");
-// 	struct BlockMetaData *myblc = ((struct BlockMetaData *)va - 1);
-// 	if (myblc->is_free == 0)
-// 	{
-// 		myblc->is_free = 1;
-// 		cprintf("curr %d\n", myblc->size);
-// 		if (LIST_PREV(myblc) != NULL)
-// 		{
-// 			if (LIST_PREV(myblc)->is_free)
-// 			{
-// 				cprintf("prev %d\n", LIST_PREV(myblc)->size);
-// 				myblc->size += LIST_PREV(myblc)->size;
-// 				LIST_PREV(myblc)->size = 0;
-// 				LIST_PREV(myblc)->is_free = 0;
-// 				cprintf("prev after merge %d\n", LIST_PREV(myblc)->size);
-// 				// LIST_REMOVE(&list,LIST_PREV(myblc));
-// 			}
-// 		}
-// 		if (LIST_NEXT(myblc) != NULL)
-// 		{
-// 			if (LIST_NEXT(myblc)->is_free)
-// 			{
-// 				cprintf("next %d\n", LIST_NEXT(myblc)->size);
-// 				myblc->size += LIST_NEXT(myblc)->size;
-// 				LIST_NEXT(myblc)->is_free = 0;
-// 				LIST_NEXT(myblc)->size = 0;
-// 				cprintf("next after merge %d\n", LIST_NEXT(myblc)->size);
-// 				// LIST_REMOVE(&list, LIST_NEXT(myblc));
-// 			}
-// 		}
-// 		cprintf("curr after merge %d\n", myblc->size);
-// 	}
-// }
 
 //=========================================
 // [4] REALLOCATE BLOCK BY FIRST FIT:
@@ -281,7 +244,7 @@ void free_block(void *va)
 void *realloc_block_FF(void *va, uint32 new_size)
 {
 	// TODO: [PROJECT'23.MS1 - #8] [3] DYNAMIC ALLOCATOR - realloc_block_FF()
-	//panic("realloc_block_FF is not implemented yet");
+	// //panic("realloc_block_FF is not implemented yet");
 
 	// print_blocks_list(list);
 
@@ -289,46 +252,56 @@ void *realloc_block_FF(void *va, uint32 new_size)
 	{
 		return alloc_block(new_size, DA_FF);
 	}
-	else if (va != NULL && new_size == 0)
+	if (va != NULL && new_size == 0)
 	{
 		free_block(va);
 		return NULL;
 	}
-	else
+
+	struct BlockMetaData *currentBlk = ((struct BlockMetaData *)va - 1);
+
+	// decrease size
+	if (new_size + sizeOfMetaData() < get_block_size(va))
 	{
-		struct BlockMetaData *currentBlk = ((struct BlockMetaData *)va - 1);
-
-		// decrease size
-		if (new_size +sizeOfMetaData()< get_block_size(va))
-		{
-
-			// struct BlockMetaData *nextBlk = LIST_NEXT(currentBlk);
-			// struct BlockMetaData *prevBlk = LIST_PREV(currentBlk);
-			struct BlockMetaData *freeMD = (struct BlockMetaData *)((void *)currentBlk + new_size + sizeOfMetaData());
-			freeMD->is_free=0;
-			freeMD->size=currentBlk->size-(new_size+sizeOfMetaData());
-			LIST_INSERT_AFTER(&list,currentBlk,freeMD);
-			currentBlk->size=new_size+sizeOfMetaData();
-			free_block((struct BlockMetaData *)freeMD+1);
-			return va;
-		}
-		// increase size
-		else if (new_size+sizeOfMetaData() > get_block_size(va))
-		{
-			if (LIST_NEXT(currentBlk)!=NULL){
-				if(LIST_NEXT(currentBlk)->is_free&&LIST_NEXT(currentBlk)->size+currentBlk->size-sizeOfMetaData()>new_size+sizeOfMetaData()){
-					LIST_NEXT(currentBlk)->size=LIST_NEXT(currentBlk)->size-(new_size-(currentBlk->size-sizeOfMetaData()));
-					currentBlk->size=new_size+sizeOfMetaData();
-						
-					return va;
-				}
-				
-			}
-			
-				return alloc_block_FF(new_size);
-				
-			
-		}
+		// struct BlockMetaData *nextBlk = LIST_NEXT(currentBlk);
+		// struct BlockMetaData *prevBlk = LIST_PREV(currentBlk);
+		struct BlockMetaData *freeMD = (struct BlockMetaData *)((void *)currentBlk + new_size + sizeOfMetaData());
+		freeMD->is_free = 0;
+		freeMD->size = currentBlk->size - (new_size + sizeOfMetaData());
+		LIST_INSERT_AFTER(&list, currentBlk, freeMD);
+		currentBlk->size = new_size + sizeOfMetaData();
+		free_block((struct BlockMetaData *)freeMD + 1);
+		return va;
 	}
-	return NULL;
+	// increase size
+	else if (new_size + sizeOfMetaData() > get_block_size(va))
+	{
+		if (LIST_NEXT(currentBlk) != NULL)
+		{
+			if (LIST_NEXT(currentBlk)->is_free && LIST_NEXT(currentBlk)->size + currentBlk->size - sizeOfMetaData() > new_size + sizeOfMetaData())
+			{
+				int currSize = currentBlk->size;
+				int nextSize = LIST_NEXT(currentBlk)->size;
+				currentBlk->size = new_size + sizeOfMetaData();
+				LIST_NEXT(currentBlk)->size = 0;
+				LIST_NEXT(currentBlk)->is_free = 0;
+				LIST_NEXT(currentBlk) = (struct BlockMetaData *)((void *)currentBlk + currentBlk->size);
+				LIST_NEXT(currentBlk)->is_free = 1;
+				LIST_NEXT(currentBlk)->size = (currSize + nextSize) - new_size + sizeOfMetaData();
+
+				return va;
+			}
+			if (LIST_NEXT(currentBlk)->is_free && LIST_NEXT(currentBlk)->size + currentBlk->size == new_size + sizeOfMetaData())
+			{
+				LIST_NEXT(currentBlk)->size = 0;
+				LIST_NEXT(currentBlk)->is_free = 0;
+				LIST_REMOVE(&list, LIST_NEXT(currentBlk));
+				currentBlk->size = new_size + sizeOfMetaData();
+				return va;
+			}
+		}
+		return alloc_block_FF(new_size);
+	}
+
+	return va;
 }
