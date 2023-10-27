@@ -281,7 +281,7 @@ void free_block(void *va)
 void *realloc_block_FF(void *va, uint32 new_size)
 {
 	// TODO: [PROJECT'23.MS1 - #8] [3] DYNAMIC ALLOCATOR - realloc_block_FF()
-	panic("realloc_block_FF is not implemented yet");
+	//panic("realloc_block_FF is not implemented yet");
 
 	// print_blocks_list(list);
 
@@ -299,26 +299,36 @@ void *realloc_block_FF(void *va, uint32 new_size)
 		struct BlockMetaData *currentBlk = ((struct BlockMetaData *)va - 1);
 
 		// decrease size
-		if (new_size < get_block_size(va))
+		if (new_size +sizeOfMetaData()< get_block_size(va))
 		{
 
 			// struct BlockMetaData *nextBlk = LIST_NEXT(currentBlk);
 			// struct BlockMetaData *prevBlk = LIST_PREV(currentBlk);
-			if ((get_block_size(va) - new_size) <= sizeOfMetaData())
-			{
-				void *v = alloc_block(new_size, DA_FF);
-				free_block(va);
-				return v;
-			}
-			else
-			{
-			}
+			struct BlockMetaData *freeMD = (struct BlockMetaData *)((void *)currentBlk + new_size + sizeOfMetaData());
+			freeMD->is_free=0;
+			freeMD->size=currentBlk->size-(new_size+sizeOfMetaData());
+			LIST_INSERT_AFTER(&list,currentBlk,freeMD);
+			currentBlk->size=new_size+sizeOfMetaData();
+			free_block((struct BlockMetaData *)freeMD+1);
+			return va;
 		}
 		// increase size
-		else if (new_size > get_block_size(va))
+		else if (new_size+sizeOfMetaData() > get_block_size(va))
 		{
+			if (LIST_NEXT(currentBlk)!=NULL){
+				if(LIST_NEXT(currentBlk)->is_free&&LIST_NEXT(currentBlk)->size+currentBlk->size-sizeOfMetaData()>new_size+sizeOfMetaData()){
+					LIST_NEXT(currentBlk)->size=LIST_NEXT(currentBlk)->size-(new_size-(currentBlk->size-sizeOfMetaData()));
+					currentBlk->size=new_size+sizeOfMetaData();
+						
+					return va;
+				}
+				
+			}
+			
+				return alloc_block_FF(new_size);
+				
+			
 		}
 	}
-
 	return NULL;
 }
