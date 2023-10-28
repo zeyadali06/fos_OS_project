@@ -336,7 +336,7 @@ void run_command_prompt()
 		// test_free_block_FF();
 
 		// test_realloc_block_FF();
-		// test_realloc_block_FF_COMPLETE();
+		test_realloc_block_FF_COMPLETE();
 
 		// parse and execute the command
 		if (command_line != NULL)
