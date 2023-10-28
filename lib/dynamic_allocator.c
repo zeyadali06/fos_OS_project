@@ -135,9 +135,15 @@ void *alloc_block_FF(uint32 size)
 				struct BlockMetaData *freeMD = (struct BlockMetaData *)((void *)blkPtr + size + sizeOfMetaData());
 				freeMD->is_free = 1;
 				freeMD->size = blkPtr->size - (size + sizeOfMetaData());
+				if (freeMD->size<sizeOfMetaData()){
+					blkPtr->size=freeMD->size;
+				}
+				else{
 				LIST_INSERT_AFTER(&list, blkPtr, freeMD);
+				blkPtr->size=0;
+				}
 				blkPtr->is_free = 0;
-				blkPtr->size = size + sizeOfMetaData();
+				blkPtr->size += size + sizeOfMetaData();
 				// cprintf("%x %x %x %x\n", (void *)blkPtr, (void *)((void *)blkPtr + sizeOfMetaData()), freeMD, size);
 				return (void *)((void *)blkPtr + sizeOfMetaData());
 			}
@@ -363,8 +369,14 @@ void *realloc_block_FF(void *va, uint32 new_size)
 		struct BlockMetaData *freeMD = (struct BlockMetaData *)((void *)currentBlk + new_size + sizeOfMetaData());
 		freeMD->is_free = 0;
 		freeMD->size = currentBlk->size - (new_size + sizeOfMetaData());
-		LIST_INSERT_AFTER(&list, currentBlk, freeMD);
-		currentBlk->size = new_size + sizeOfMetaData();
+		if (freeMD->size<sizeOfMetaData()){
+					currentBlk->size=freeMD->size;
+				}
+				else{
+				LIST_INSERT_AFTER(&list, currentBlk, freeMD);
+				currentBlk->size=0;
+				}
+		currentBlk->size += new_size + sizeOfMetaData();
 		free_block((struct BlockMetaData *)freeMD + 1);
 		return va;
 	}
@@ -376,14 +388,19 @@ void *realloc_block_FF(void *va, uint32 new_size)
 			if (LIST_NEXT(currentBlk)->is_free && LIST_NEXT(currentBlk)->size + currentBlk->size - sizeOfMetaData() > new_size + sizeOfMetaData())
 			{
 				int currSize = currentBlk->size;
-				int nextSize = LIST_NEXT(currentBlk)->size;
+				int nextSize = (LIST_NEXT(currentBlk)->size+currSize)-(new_size + sizeOfMetaData());
 				currentBlk->size = new_size + sizeOfMetaData();
 				LIST_NEXT(currentBlk)->size = 0;
 				LIST_NEXT(currentBlk)->is_free = 0;
-				LIST_NEXT(currentBlk) = (struct BlockMetaData *)((void *)currentBlk + currentBlk->size);
+				if (nextSize<sizeOfMetaData()){
+					LIST_REMOVE(&list, LIST_NEXT(currentBlk));
+					currentBlk->size+=nextSize;
+				}
+				else{
+					LIST_NEXT(currentBlk) = (struct BlockMetaData *)((void *)currentBlk + currentBlk->size);
 				LIST_NEXT(currentBlk)->is_free = 1;
 				LIST_NEXT(currentBlk)->size = (currSize + nextSize) - new_size + sizeOfMetaData();
-
+				}
 				return va;
 			}
 			if (LIST_NEXT(currentBlk)->is_free && LIST_NEXT(currentBlk)->size + currentBlk->size == new_size + sizeOfMetaData())
