@@ -160,8 +160,98 @@ void *alloc_block_FF(uint32 size)
 void *alloc_block_BF(uint32 size)
 {
 	// TODO: [PROJECT'23.MS1 - BONUS] [3] DYNAMIC ALLOCATOR - alloc_block_BF()
-	panic("alloc_block_BF is not implemented yet");
-	return NULL;
+
+	// cprintf("alloc block BF \n");
+	struct BlockMetaData *blkPtr;
+
+	if (size == 0)
+	{
+		return NULL;
+	}
+	struct BlockMetaData *fit = list.lh_first;
+	uint8 isFit = 0;
+	LIST_FOREACH(blkPtr, &list)
+	{
+		if (blkPtr->is_free == 1 && blkPtr->size >= size + sizeOfMetaData())
+		{
+			isFit = 1;
+			fit = blkPtr;
+
+			break;
+		}
+	}
+	// cprintf("begin nextfit size %d \n", nextFit->size);
+	// cprintf("begin fit size %d \n", fit->size);
+	// cprintf("user size  %d \n", size);
+	LIST_FOREACH(blkPtr, &list)
+	{
+
+		if (blkPtr->is_free == 1)
+		{
+			if (blkPtr->size == size + sizeOfMetaData())
+			{
+				blkPtr->is_free = 0;
+				return ((void *)blkPtr + sizeOfMetaData());
+			}
+
+			if (blkPtr->size > size + sizeOfMetaData())
+			{
+
+				// cprintf("in condition fit 1 \n");
+				// if (!isFit)
+				// {
+				// 	cprintf("nextfit size %d \n", blkPtr->size);
+				// 	cprintf("fit size %d \n", fit->size);
+				// }
+				if (fit->size >= blkPtr->size)
+				{
+					// cprintf("in condition fit 2 \n");
+					fit = blkPtr;
+				}
+				// cprintf("in condition fit 3 \n");
+			}
+		}
+	}
+
+	// cprintf("after loop \n");
+	// cprintf("fit size %d \n", fit->size);
+	// cprintf("Test size %d \n", size);
+	// cprintf("fit address %x \n", (void *)fit);
+
+	if (isFit == 1)
+	{
+
+		struct BlockMetaData *freeMD = (struct BlockMetaData *)((void *)fit + size + sizeOfMetaData());
+		freeMD->is_free = 1;
+		freeMD->size = fit->size - (size + sizeOfMetaData());
+		if ((freeMD->size) < sizeOfMetaData())
+		{
+			fit->size = freeMD->size;
+		}
+		else
+		{
+			fit->size = 0;
+			LIST_INSERT_AFTER(&list, fit, freeMD);
+		}
+
+		// cprintf("isFit 1 \n");
+		fit->is_free = 0;
+		fit->size += size + sizeOfMetaData();
+		// cprintf("iFit 2 \n");
+		// cprintf("%x %x %x %x\n", (void *)fit, ((void *)fit + sizeOfMetaData()), freeMD, size);
+		return ((void *)fit + sizeOfMetaData());
+	}
+	// cprintf("after isFit \n");
+	if (sbrk(size + sizeOfMetaData()) != (void *)-1)
+	{
+		return alloc_block_BF(size);
+	}
+	else
+	{
+		// cprintf("size %d /n", );
+
+		return NULL;
+	}
 }
 
 //=========================================
@@ -187,6 +277,7 @@ void *alloc_block_NF(uint32 size)
 // ===================================================
 void free_block(void *va)
 {
+	// cprintf("free_block \n");
 	// TODO: [PROJECT'23.MS1 - #7] [3] DYNAMIC ALLOCATOR - free_block()
 	if (va == NULL)
 		return;
@@ -198,6 +289,7 @@ void free_block(void *va)
 
 		if (LIST_PREV(myblc) != NULL)
 		{
+			// cprintf("init prev fun \n");
 
 			if (LIST_PREV(myblc)->is_free)
 			{
@@ -214,10 +306,12 @@ void free_block(void *va)
 				myblc = LIST_PREV(myblc);
 				// LIST_REMOVE(&list,LIST_PREV(myblc));
 			}
+			// cprintf("end prev fun \n");
 		}
 		if (LIST_NEXT(myblc) != NULL)
 		{
 
+			// cprintf(" init next fun \n");
 			if (LIST_NEXT(myblc)->is_free)
 			{
 
@@ -232,6 +326,7 @@ void free_block(void *va)
 
 				// LIST_REMOVE(&list, LIST_NEXT(myblc));
 			}
+			// cprintf(" end next fun \n");
 		}
 	}
 
