@@ -1442,41 +1442,92 @@ void test_realloc_block_FF_COMPLETE()
 	return;
 #endif
 
-	// int initAllocatedSpace = 3 * Mega;
-	// initialize_dynamic_allocator(KERNEL_HEAP_START, initAllocatedSpace);
+	uint32 newallocSizes[numOfAllocs] = {4 * kilo, 200 * sizeof(char) + sizeOfMetaData(), 1 * kilo, 30 * sizeof(int) + sizeOfMetaData(), 2 * kilo, 10 * sizeOfMetaData(), 7 * kilo};
 
-	// print_blocks_list(list);
-	cprintf("%d\n", LIST_SIZE(&list));
+	cprintf("==========================================================\n");
+	cprintf("Tests depend on the Allocate, Reallocate and Free Function\n");
+	cprintf("==========================================================\n");
 
-	void *va;
+	int eval = 0;
+	uint8 isCorrect = 1;
 
+	// inialize list and allocate some blocks
+	int initAllocatedSpace = 3 * Mega;
+	initialize_dynamic_allocator(KERNEL_HEAP_START, initAllocatedSpace);
+
+	int NOBlocksOfEachSize = allocCntPerSize / 4;
+	for (int k = 0, i = 0; i < numOfAllocs * NOBlocksOfEachSize; i++)
+	{
+		alloc_block(newallocSizes[k] - sizeOfMetaData(), DA_FF);
+		if (i % NOBlocksOfEachSize == 0 && i != 0)
+			k++;
+	}
+
+	// free some blocks and reallocate the prev block with smaller sizes
+	cprintf("1: Test reallocate with previous free block.[33%]\n\n");
+	uint32 reAllocatedBlockRes[7], freeBlockRes[7];
+	for (int i = 0; i < numOfAllocs; i++)
+	{
+		reAllocatedBlockRes[i] = newallocSizes[i] - 20;
+		freeBlockRes[i] = newallocSizes[i] + 20;
+	}
+
+	short index = 0;
 	struct BlockMetaData *currBlk;
 	LIST_FOREACH(currBlk, &list)
 	{
-		cprintf("%x   ", LIST_NEXT(currBlk));
-		cprintf("%x\n", LIST_NEXT(LIST_NEXT(currBlk)));
-		if (currBlk == (struct BlockMetaData *)320)
-		{
-			// cprintf("ok\n");
-			cprintf("%x  ", currBlk);
-			cprintf("%d  ", currBlk->size);
-			cprintf("%d\n", currBlk->is_free);
-			// cprintf("%d\n", LIST_NEXT(currBlk)->prev_next_info.le_next->is_free);
-		}
-
-		// cprintf("%x\n", LIST_NEXT(LIST_NEXT(currBlk)));
-		// cprintf("%x\n", LIST_NEXT(LIST_NEXT(LIST_NEXT(currBlk))));
-		// cprintf("%x\n", LIST_NEXT(LIST_NEXT(LIST_NEXT(LIST_NEXT(currBlk)))));
-
-		// if ()
-		if (currBlk->size == 1 && LIST_PREV(currBlk)->size > 32)
-		{
-			va = realloc_block_FF((void *)((struct BlockMetaData *)LIST_PREV(currBlk) + 1), LIST_PREV(currBlk)->size - 16);
+		if (currBlk == LIST_LAST(&list))
 			break;
+
+		if (LIST_NEXT(currBlk) != NULL)
+		{
+			uint8 check = 0;
+			for (int j = 0; j < numOfAllocs; j++)
+			{
+				if (currBlk->size == newallocSizes[j])
+				{
+					check = 1;
+					break;
+				}
+			}
+			if (currBlk->size != LIST_NEXT(currBlk)->size && check)
+			{
+				free_block((void *)(LIST_NEXT(currBlk) + 1));
+				realloc_block_FF((void *)(currBlk + 1), currBlk->size - sizeOfMetaData() - 20);
+				if (reAllocatedBlockRes[index] != currBlk->size)
+				{
+					panic("test_realloc_block_FF_COMPLETE #1.1: WRONG REALLOC! content of the block is not correct. Expected %d, Actual %d", reAllocatedBlockRes[index], currBlk->size);
+					isCorrect = 0;
+				}
+				if (freeBlockRes[index + 1] != LIST_NEXT(currBlk)->size && LIST_NEXT(currBlk) == LIST_LAST(&list))
+				{
+					panic("test_realloc_block_FF_COMPLETE #1.2: WRONG REALLOC! content of the block is not correct. Expected %d, Actual %d", freeBlockRes[index + 1], LIST_NEXT(currBlk)->size);
+					isCorrect = 0;
+				}
+				index++;
+			}
 		}
 	}
 
+	if (isCorrect)
+		eval += 33;
+
+	// reallocate block with size bigger than heap
+	cprintf("2: Test reallocate with block bigger than heap.[33%]\n\n");
+	void *va = realloc_block_FF((void *)(LIST_FIRST(&list) + 1), 3 * initAllocatedSpace);
+	if (va == NULL)
+		eval += 33;
+	else
+		panic("test_realloc_block_FF_COMPLETE #2: WRONG REALLOC! - it return wrong address.");
+
+
+
+
+
+	// print_blocks_list(list);
+
+	cprintf("test realloc_block part 2 completed. Evaluation = %d%\n", eval);
+
 	// panic("this is unseen test");
 }
-
 /********************Helper Functions***************************/
