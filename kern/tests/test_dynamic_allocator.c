@@ -1526,62 +1526,20 @@ void test_realloc_block_FF_COMPLETE()
 
 	print_blocks_list(list);
 
-	// // reallocate block with bigger size but reallocate it in another block
-	// index = 0;
-	// uint8 c = 0;
-	// struct BlockMetaData *an;
-	// currBlk = NULL;
-	// LIST_FOREACH(currBlk, &list)
-	// {
-	// 	// currBlk = currBlk;
-	// 	// cprintf("%d\n", currBlk->size);
-	// 	// if (currBlk == LIST_LAST(&list))
-	// 	// 	break;
-	// 	// cprintf("next before if: %x\n", LIST_NEXT(currBlk));
-	// 	if (LIST_NEXT(currBlk) != NULL)
-	// 	{
-	// 		// cprintf("%d\n", currBlk->size);
-	// 		// if (currBlk->size != LIST_NEXT(currBlk)->size && LIST_NEXT(currBlk)->size != LIST_NEXT(LIST_NEXT(currBlk))->size)
-	// 		if (LIST_NEXT(currBlk)->is_free)
-	// 		{
-	// 			// cprintf("%d\n", currBlk->size);
-	// 			// free_block((void *)(LIST_NEXT(currBlk) + 1));
-	// 			// alloc_block(currBlk->size + LIST_NEXT(LIST_NEXT(currBlk))->size) - sizeOfMetaData()-1, DA_FF);
-	// 			// currBlk = currBlk;
-	// 			cprintf("list prev: %x\n", LIST_PREV(currBlk));
-	// 			cprintf("list next: %x\n", LIST_NEXT(currBlk));
-	// 			cprintf("list next next: %x\n", LIST_NEXT(LIST_NEXT(currBlk)));
-	// 			cprintf("adress curr: %x\n", currBlk);
-	// 			cprintf("list size: %d\n", list.size);
-	// 			void *va;
-	// 			va = realloc_block_FF((void *)(currBlk + 1), currBlk->size - sizeOfMetaData() + 7188);
-	// 			cprintf("reallocate: %x\n", va);
-	// 			cprintf("list prev: %x\n", LIST_PREV(currBlk));
-	// 			cprintf("list next: %x\n", LIST_NEXT(currBlk));
-	// 			cprintf("list next next: %x\n", LIST_NEXT(LIST_NEXT(currBlk)));
-	// 			cprintf("adress an: %x\n", an);
-	// 			cprintf("list size: %d\n",list.size);
+	// reallocate block with bigger size but reallocate it in another block
+	currBlk = LIST_FIRST(&list);
+	while (LIST_NEXT(currBlk) != NULL)
+	{
+		if (LIST_NEXT(currBlk)->is_free)
+		{
+			cprintf("%d\n", currBlk->size);
+			void *va;
+			va = realloc_block_FF((void *)(currBlk + 1), currBlk->size - sizeOfMetaData() + 7188);
+		}
+		currBlk = LIST_NEXT(currBlk);
+	}
 
-	// 			// print_blocks_list(list);
-	// 			// free_block((void *)(currBlk + 1));
-	// 			// cprintf("%d\n", currBlk->is_free);
-
-	// 			// currBlk->is_free = 1;
-	// 			// cprintf("%d\n", LIST_NEXT(an)->size);
-	// 			// cprintf("%d\n", currBlk->size);
-	// 			// LIST_INSERT_HEAD(&anlist, currBlk);
-
-	// 			// cprintf("%d %d %d %d %d\n", LIST_PREV(LIST_PREV(currBlk))->size, LIST_PREV(currBlk)->size, currBlk->size, LIST_NEXT(currBlk)->size, LIST_NEXT(LIST_NEXT(currBlk))->size);
-	// 			// cprintf("size: %d\n", currBlk->size);
-	// 		}
-
-	// 	}
-	// }
-
-	// // cprintf("list szie: %d", list.size);
-
-	// print_blocks_list(list);
-	// // print_blocks_list(anlist);
+	print_blocks_list(list);
 
 	cprintf("test realloc_block part 2 completed. Evaluation = %d%\n", eval);
 

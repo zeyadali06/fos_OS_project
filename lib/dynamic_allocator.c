@@ -132,7 +132,6 @@ void *alloc_block_FF(uint32 size)
 			}
 			else if (blkPtr->size > size + sizeOfMetaData())
 			{
-				cprintf("allocate\n");
 				struct BlockMetaData *freeMD = (struct BlockMetaData *)((void *)blkPtr + size + sizeOfMetaData());
 				freeMD->is_free = 1;
 				freeMD->size = blkPtr->size - (size + sizeOfMetaData());
@@ -451,7 +450,7 @@ void *realloc_block_FF(void *va, uint32 new_size)
 				cprintf("3\n");
 				LIST_NEXT(currentBlk)->size = 0;
 				LIST_NEXT(currentBlk)->is_free = 0;
-				LIST_REMOVE(&list, LIST_NEXT(currentBlk));
+				// LIST_REMOVE(&list, LIST_NEXT(currentBlk));
 				currentBlk->size = new_size + sizeOfMetaData();
 				return va;
 			}
@@ -460,29 +459,29 @@ void *realloc_block_FF(void *va, uint32 new_size)
 		free_block((void *)((struct BlockMetaData *)currentBlk + 1));
 		// LIST_REMOVE(&list, currentBlk);
 
-		// currentBlk->size = 0;
-		// currentBlk->is_free = 0;
-		// list.size--;
-		// if (LIST_PREV(currentBlk) == NULL)
-		// {
-		// 	if (LIST_SIZE(&list) > 1)
+		// 	currentBlk->size = 0;
+		// 	currentBlk->is_free = 0;
+		// 	list.size--;
+		// 	if (LIST_PREV(currentBlk) == NULL)
 		// 	{
-		// 		LIST_INSERT_HEAD(&list, LIST_NEXT(currentBlk));
+		// 		if (LIST_SIZE(&list) > 1)
+		// 		{
+		// 			LIST_INSERT_HEAD(&list, LIST_NEXT(currentBlk));
+		// 		}
+		// 		else
+		// 		{
+		// 			LIST_INIT(&list);
+		// 		}
 		// 	}
-		// 	else
+		// 	else if (LIST_PREV(currentBlk) != NULL && LIST_NEXT(currentBlk) != NULL)
 		// 	{
-		// 		currentBlk = NULL;
+		// 		LIST_NEXT(LIST_PREV(currentBlk)) = LIST_NEXT(currentBlk);
 		// 	}
-		// }
-		// else if (LIST_PREV(currentBlk) != NULL && LIST_NEXT(currentBlk) != NULL)
-		// {
-		// 	LIST_PREV(currentBlk) = LIST_NEXT(currentBlk);
-		// }
-		// else if (LIST_NEXT(currentBlk) == NULL)
-		// {
-		// 	LIST_INSERT_TAIL(&list, LIST_PREV(currentBlk));
-		// }
-		// LIST_NEXT(currentBlk) = LIST_PREV(currentBlk) = NULL;
+		// 	else if (LIST_NEXT(currentBlk) == NULL)
+		// 	{
+		// 		LIST_INSERT_TAIL(&list, LIST_PREV(currentBlk));
+		// 	}
+		// 	LIST_NEXT(currentBlk) = LIST_PREV(currentBlk) = NULL;
 
 		return alloc_block_FF(new_size);
 	}
