@@ -358,7 +358,7 @@ void free_block(void *va)
 void *realloc_block_FF(void *va, uint32 new_size)
 {
 	// TODO: [PROJECT'23.MS1 - #8] [3] DYNAMIC ALLOCATOR - realloc_block_FF()
-	// panic("realloc_block_FF is not implemented yet");
+	// //panic("realloc_block_FF is not implemented yet");
 
 	// print_blocks_list(list);
 
@@ -384,7 +384,6 @@ void *realloc_block_FF(void *va, uint32 new_size)
 		freeMD->size = currentBlk->size - (new_size + sizeOfMetaData());
 		LIST_INSERT_AFTER(&list, currentBlk, freeMD);
 		currentBlk->size = new_size + sizeOfMetaData();
-		currentBlk->is_free = 0;
 		free_block((struct BlockMetaData *)freeMD + 1);
 		return va;
 	}
@@ -399,32 +398,14 @@ void *realloc_block_FF(void *va, uint32 new_size)
 
 				// cprintf("2\n");
 				int currSize = currentBlk->size;
-				int nextSize = LIST_NEXT(currentBlk)->size;
+				int nextSize = (LIST_NEXT(currentBlk)->size+currSize)-(new_size + sizeOfMetaData());
 				currentBlk->size = new_size + sizeOfMetaData();
 				LIST_NEXT(currentBlk)->size = 0;
 				LIST_NEXT(currentBlk)->is_free = 0;
+				LIST_NEXT(currentBlk) = (struct BlockMetaData *)((void *)currentBlk + currentBlk->size);
+				LIST_NEXT(currentBlk)->is_free = 1;
+				LIST_NEXT(currentBlk)->size = (currSize + nextSize) - new_size + sizeOfMetaData();
 
-				struct BlockMetaData *newMD = (struct BlockMetaData *)((void *)currentBlk + currentBlk->size);
-				newMD->is_free = 1;
-				newMD->size = (currSize + nextSize) - (new_size + sizeOfMetaData());
-				currentBlk->is_free = 0;
-				LIST_INSERT_AFTER(&list, currentBlk, newMD);
-
-				if (LIST_NEXT(LIST_NEXT(newMD)) != NULL)
-				{
-					LIST_NEXT(newMD) = LIST_NEXT(LIST_NEXT(newMD));
-					LIST_PREV(LIST_NEXT(newMD)) = newMD;
-				}
-				else
-				{
-					LIST_NEXT(newMD) = NULL;
-				}
-				list.size--;
-
-				// LIST_REMOVE(&list, LIST_NEXT(newMD));
-				// LIST_NEXT(currentBlk) = (struct BlockMetaData *)((void *)currentBlk + currentBlk->size);
-				// LIST_NEXT(currentBlk)->is_free = 1;
-				// LIST_NEXT(currentBlk)->size = (currSize + nextSize) - (new_size + sizeOfMetaData());
 				return va;
 
 				// int currSize = currentBlk->size;
