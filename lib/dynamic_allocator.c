@@ -467,7 +467,7 @@ void *realloc_block_FF(void *va, uint32 new_size)
 			}
 		}
 		// cprintf("4\n");
-		// free_block((void *)((struct BlockMetaData *)currentBlk + 1));
+		 free_block((void *)((struct BlockMetaData *)currentBlk + 1));
 		// LIST_REMOVE(&list, currentBlk);
 
 		// 	currentBlk->size = 0;

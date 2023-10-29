@@ -1550,12 +1550,19 @@ void test_realloc_block_FF_COMPLETE()
 
 			sizeBeforeRA = currBlk->size;
 
-			uint32 increasingSize = 7188;
+			uint32 increasingSize = 7200;
 
 			returnVA = realloc_block_FF((void *)(currBlk + 1), currBlk->size - sizeOfMetaData() + increasingSize);
 			sizeAfterRA = LIST_PREV(LIST_LAST(&list))->size;
 			actualVA = (void *)(LIST_PREV(LIST_LAST(&list)) + 1);
-
+			// returnVA = realloc_block_FF((void *)(currBlk + 1), currBlk->size - sizeOfMetaData() + increasingSize);
+			testlist[init]=currBlk;
+			init++;
+			// struct BlockMetaData *reallocbk=((struct BlockMetaData *)va - 1);
+			// if (LIST_NEXT(reallocbk)!=LIST_LAST(&list)){
+			// 	panic("test_realloc_block_FF_COMPLETE #3: WRONG REALLOC! - it return wrong address.");
+			// }
+			
 			// cprintf("%x\n", (void *)(LIST_PREV(LIST_LAST(&list)) + 2) + LIST_PREV(LIST_LAST(&list))->size);
 			// cprintf("ad: %x\n", (struct BlockMetaData *)returnVA - 1);
 			cprintf("%x %x %d %d\n", actualVA, returnVA, sizeBeforeRA, sizeAfterRA);
