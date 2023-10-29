@@ -1500,17 +1500,17 @@ void test_realloc_block_FF_COMPLETE()
 				returnVA = realloc_block_FF((void *)(currBlk + 1), currBlk->size - sizeOfMetaData() - 20);
 				if (reAllocatedBlockRes[index] != currBlk->size)
 				{
-					panic("test_realloc_block_FF_COMPLETE #1.1: WRONG REALLOC! content of the block is not correct. Expected %d, Actual %d", reAllocatedBlockRes[index], currBlk->size);
+					panic("test_realloc_block_FF_COMPLETE #1.1: WRONG REALLOC! content of the block is not correct. Expected %d, Actual %d \n", reAllocatedBlockRes[index], currBlk->size);
 					isCorrect = 0;
 				}
 				if (freeBlockRes[index + 1] != LIST_NEXT(currBlk)->size && LIST_NEXT(currBlk) == LIST_LAST(&list))
 				{
-					panic("test_realloc_block_FF_COMPLETE #1.2: WRONG REALLOC! content of the block is not correct. Expected %d, Actual %d", freeBlockRes[index + 1], LIST_NEXT(currBlk)->size);
+					panic("test_realloc_block_FF_COMPLETE #1.2: WRONG REALLOC! content of the block is not correct. Expected %d, Actual %d \n", freeBlockRes[index + 1], LIST_NEXT(currBlk)->size);
 					isCorrect = 0;
 				}
 				if (actualVA != returnVA)
 				{
-					panic("test_realloc_block_FF_COMPLETE #1.3: WRONG REALLOC! return wrong address. Expected %x, Actual %x", actualVA, returnVA);
+					panic("test_realloc_block_FF_COMPLETE #1.3: WRONG REALLOC! return wrong address. Expected %x, Actual %x \n", actualVA, returnVA);
 					isCorrect = 0;
 				}
 				index++;
@@ -1529,19 +1529,23 @@ void test_realloc_block_FF_COMPLETE()
 	if (va == NULL)
 		eval += 25;
 	else
-		panic("test_realloc_block_FF_COMPLETE #2: WRONG REALLOC! - return wrong address. Expected %x, Actual %x", NULL, va);
+		panic("test_realloc_block_FF_COMPLETE #2: WRONG REALLOC! - return wrong address. Expected %x, Actual %x \n", NULL, va);
 
 	// print_blocks_list(list);
 
 	// reallocate block with bigger size but reallocate it in another block
-	struct BlockMetaData*testlist[6];
-	int init=0;
-	cprintf("3: reallocate block with bigger size but reallocate it in another block.[33%]\n\n");
+	struct BlockMetaData *testlist[6];
+	int init = 0;
+	//====================================================================//
+	//[3] reallocate block with bigger size but reallocate it in another block
+	//====================================================================//
+
+	cprintf("3: reallocate block with bigger size but reallocate it in another block.[25%]\n\n");
 	currBlk = LIST_FIRST(&list);
 	struct BlockMetaData *lastestblk;
 	while (LIST_NEXT(currBlk) != NULL)
 	{
-		if(LIST_NEXT(currBlk)==LIST_LAST(&list))
+		if (LIST_NEXT(currBlk) == LIST_LAST(&list))
 			break;
 		if (LIST_NEXT(currBlk)->is_free)
 		{
@@ -1556,27 +1560,27 @@ void test_realloc_block_FF_COMPLETE()
 			sizeAfterRA = LIST_PREV(LIST_LAST(&list))->size;
 			actualVA = (void *)(LIST_PREV(LIST_LAST(&list)) + 1);
 			// returnVA = realloc_block_FF((void *)(currBlk + 1), currBlk->size - sizeOfMetaData() + increasingSize);
-			testlist[init]=currBlk;
+			testlist[init] = currBlk;
 			init++;
 			// struct BlockMetaData *reallocbk=((struct BlockMetaData *)va - 1);
 			// if (LIST_NEXT(reallocbk)!=LIST_LAST(&list)){
 			// 	panic("test_realloc_block_FF_COMPLETE #3: WRONG REALLOC! - it return wrong address.");
 			// }
-			
+
 			// cprintf("%x\n", (void *)(LIST_PREV(LIST_LAST(&list)) + 2) + LIST_PREV(LIST_LAST(&list))->size);
 			// cprintf("ad: %x\n", (struct BlockMetaData *)returnVA - 1);
-			cprintf("%x %x %d %d\n", actualVA, returnVA, sizeBeforeRA, sizeAfterRA);
+			// cprintf("%x %x %d %d\n", actualVA, returnVA, sizeBeforeRA, sizeAfterRA);
 
 			if (LIST_NEXT(LIST_NEXT(currBlk)) != NULL)
 			{
 				if (returnVA != actualVA)
 				{
-					panic("test_realloc_block_FF_COMPLETE #3.1: WRONG REALLOC! - return wrong address. Expected %x, Actual %x", actualVA, returnVA);
+					panic("test_realloc_block_FF_COMPLETE #3.1: WRONG REALLOC! - return wrong address. Expected %x, Actual %x \n", actualVA, returnVA);
 					isCorrect = 0;
 				}
 				if (sizeAfterRA != sizeBeforeRA + increasingSize)
 				{
-					panic("test_realloc_block_FF_COMPLETE #3.2: WRONG REALLOC! content of the block is not correct. Expected %d, Actual %d", sizeBeforeRA + increasingSize, sizeAfterRA);
+					panic("test_realloc_block_FF_COMPLETE #3.2: WRONG REALLOC! content of the block is not correct. Expected %d, Actual %d \n", sizeBeforeRA + increasingSize, sizeAfterRA);
 					isCorrect = 0;
 				}
 			}
@@ -1585,34 +1589,50 @@ void test_realloc_block_FF_COMPLETE()
 		}
 		currBlk = LIST_NEXT(currBlk);
 	}
-	
 
-	print_blocks_list(list);
-	init=0;
-	cprintf("%d\n", list.size);
+	if (isCorrect)
+		eval += 25;
+
+	//==================================================================================================//
+	//[4] Try to reallocate the block with a size equal to the size of two blocks [coalesed with next]
+	//==================================================================================================//
+
+	cprintf("4: Try to reallocate the block with a size equal to the size of two blocks [coalesed with next].[25%]\n\n");
+
+	// print_blocks_list(list);
+	init = 0;
+	// cprintf("%d\n", list.size);
 	currBlk = LIST_FIRST(&list);
 	while (LIST_NEXT(currBlk) != NULL)
 	{
-		if(LIST_NEXT(currBlk)==LIST_LAST(&list))
+		if (LIST_NEXT(currBlk) == LIST_LAST(&list))
 			break;
 		if (LIST_NEXT(currBlk)->is_free)
 		{
-			int size=currBlk->size+LIST_NEXT(currBlk)->size;
-			cprintf("%d\n", currBlk->size);
+			int size = currBlk->size + LIST_NEXT(currBlk)->size;
+			// cprintf("%d\n", currBlk->size);
 
 			void *va;
-			va = realloc_block_FF((void *)(currBlk + 1), currBlk->size - sizeOfMetaData() + LIST_NEXT(currBlk)->size);
-		
-			struct BlockMetaData *reallocbk=((struct BlockMetaData *)va - 1);
-			if(reallocbk!=currBlk||reallocbk->is_free!=0||reallocbk->size!=size)
-				panic("test_realloc_block_FF_COMPLETE #3: WRONG REALLOC! - it return wrong address.");
-			
-			
+			va = realloc_block_FF((void *)(currBlk + 1), currBlk->size - sizeOfMetaData() + LIST_NEXT(currBlk)->size );
+
+			struct BlockMetaData *reallocbk = ((struct BlockMetaData *)va - 1);
+			if (reallocbk != currBlk)
+			{
+				panic("test_realloc_block_FF_COMPLETE #4.1: WRONG REALLOC! - it return wrong address.Expected %x, Actual %x\n", currBlk, reallocbk);
+				isCorrect = 0;
+			}
+			if (reallocbk->is_free != 0 || reallocbk->size != size)
+			{
+				panic("test_realloc_block_FF_COMPLETE #4.2: WRONG REALLOC! - Make sure to the value of  the size & is_free values of the vanishing block.Expected %x, Actual %x\n", size, reallocbk->size);
+				isCorrect = 0;
+			}
 		}
 		currBlk = LIST_NEXT(currBlk);
 	}
-	cprintf("%d\n", list.size);
-	print_blocks_list(list);
+	// cprintf("%d\n", list.size);
+	// print_blocks_list(list);
+	if (isCorrect)
+		eval += 25;
 	cprintf("test realloc_block part 2 completed. Evaluation = %d%\n", eval);
 
 	// panic("this is unseen test");
