@@ -1527,20 +1527,58 @@ void test_realloc_block_FF_COMPLETE()
 	print_blocks_list(list);
 
 	// reallocate block with bigger size but reallocate it in another block
+	struct BlockMetaData*testlist[6];
+	int init=0;
+	cprintf("3: reallocate block with bigger size but reallocate it in another block.[33%]\n\n");
 	currBlk = LIST_FIRST(&list);
+	struct BlockMetaData *lastestblk;
 	while (LIST_NEXT(currBlk) != NULL)
 	{
+		if(LIST_NEXT(currBlk)==LIST_LAST(&list))
+			break;
 		if (LIST_NEXT(currBlk)->is_free)
 		{
 			cprintf("%d\n", currBlk->size);
 			void *va;
-			va = realloc_block_FF((void *)(currBlk + 1), currBlk->size - sizeOfMetaData() + 7188);
+			va = realloc_block_FF((void *)(currBlk + 1), currBlk->size - sizeOfMetaData() + 7200);
+			testlist[init]=currBlk;
+			init++;
+			struct BlockMetaData *reallocbk=((struct BlockMetaData *)va - 1);
+			if (LIST_NEXT(reallocbk)!=LIST_LAST(&list)){
+				panic("test_realloc_block_FF_COMPLETE #3: WRONG REALLOC! - it return wrong address.");
+			}
+			
 		}
 		currBlk = LIST_NEXT(currBlk);
 	}
+	
 
 	print_blocks_list(list);
+	init=0;
+	cprintf("%d\n", list.size);
+	currBlk = LIST_FIRST(&list);
+	while (LIST_NEXT(currBlk) != NULL)
+	{
+		if(LIST_NEXT(currBlk)==LIST_LAST(&list))
+			break;
+		if (LIST_NEXT(currBlk)->is_free)
+		{
+			int size=currBlk->size+LIST_NEXT(currBlk)->size;
+			cprintf("%d\n", currBlk->size);
 
+			void *va;
+			va = realloc_block_FF((void *)(currBlk + 1), currBlk->size - sizeOfMetaData() + LIST_NEXT(currBlk)->size);
+		
+			struct BlockMetaData *reallocbk=((struct BlockMetaData *)va - 1);
+			if(reallocbk!=currBlk||reallocbk->is_free!=0||reallocbk->size!=size)
+				panic("test_realloc_block_FF_COMPLETE #3: WRONG REALLOC! - it return wrong address.");
+			
+			
+		}
+		currBlk = LIST_NEXT(currBlk);
+	}
+	cprintf("%d\n", list.size);
+	print_blocks_list(list);
 	cprintf("test realloc_block part 2 completed. Evaluation = %d%\n", eval);
 
 	// panic("this is unseen test");
