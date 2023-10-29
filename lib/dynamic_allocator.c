@@ -135,9 +135,18 @@ void *alloc_block_FF(uint32 size)
 				struct BlockMetaData *freeMD = (struct BlockMetaData *)((void *)blkPtr + size + sizeOfMetaData());
 				freeMD->is_free = 1;
 				freeMD->size = blkPtr->size - (size + sizeOfMetaData());
-				LIST_INSERT_AFTER(&list, blkPtr, freeMD);
+				// LIST_INSERT_AFTER(&list, blkPtr, freeMD);
+				if ((freeMD->size) < sizeOfMetaData())
+				{
+					blkPtr->size = freeMD->size;
+				}
+				else
+				{
+					blkPtr->size = 0;
+					LIST_INSERT_AFTER(&list, blkPtr, freeMD);
+				}
 				blkPtr->is_free = 0;
-				blkPtr->size = size + sizeOfMetaData();
+				blkPtr->size += size + sizeOfMetaData();
 				// cprintf("%x %x %x %x\n", (void *)blkPtr, (void *)((void *)blkPtr + sizeOfMetaData()), freeMD, size);
 				return ((void *)blkPtr + sizeOfMetaData());
 			}
@@ -375,7 +384,7 @@ void *realloc_block_FF(void *va, uint32 new_size)
 		freeMD->size = currentBlk->size - (new_size + sizeOfMetaData());
 		LIST_INSERT_AFTER(&list, currentBlk, freeMD);
 		currentBlk->size = new_size + sizeOfMetaData();
-		currentBlk->is_free=0;
+		currentBlk->is_free = 0;
 		free_block((struct BlockMetaData *)freeMD + 1);
 		return va;
 	}
@@ -385,7 +394,7 @@ void *realloc_block_FF(void *va, uint32 new_size)
 		// cprintf("1\n");
 		if (LIST_NEXT(currentBlk) != NULL)
 		{
-			if (LIST_NEXT(currentBlk)->is_free && LIST_NEXT(currentBlk)->size + currentBlk->size - sizeOfMetaData() > new_size + sizeOfMetaData())
+			if (LIST_NEXT(currentBlk)->is_free && LIST_NEXT(currentBlk)->size + currentBlk->size - sizeOfMetaData() >= new_size + sizeOfMetaData())
 			{
 
 				// cprintf("2\n");
@@ -398,7 +407,7 @@ void *realloc_block_FF(void *va, uint32 new_size)
 				struct BlockMetaData *newMD = (struct BlockMetaData *)((void *)currentBlk + currentBlk->size);
 				newMD->is_free = 1;
 				newMD->size = (currSize + nextSize) - (new_size + sizeOfMetaData());
-				currentBlk->is_free=0;
+				currentBlk->is_free = 0;
 				LIST_INSERT_AFTER(&list, currentBlk, newMD);
 
 				if (LIST_NEXT(LIST_NEXT(newMD)) != NULL)
@@ -446,28 +455,30 @@ void *realloc_block_FF(void *va, uint32 new_size)
 				// }
 				// return va;
 			}
-			if (LIST_NEXT(currentBlk)->is_free && LIST_NEXT(currentBlk)->size + currentBlk->size == new_size + sizeOfMetaData())
+			if (LIST_NEXT(currentBlk)->is_free && LIST_NEXT(currentBlk)->size + currentBlk->size >= new_size + sizeOfMetaData())
 			{
 				// cprintf("3\n");
+				currentBlk->size = currentBlk->size + LIST_NEXT(currentBlk)->size;
 				LIST_NEXT(currentBlk)->size = 0;
 				LIST_NEXT(currentBlk)->is_free = 0;
-				if(LIST_NEXT(LIST_NEXT(currentBlk))!=NULL){
-					LIST_NEXT(currentBlk)=LIST_NEXT(LIST_NEXT(currentBlk));
-					LIST_PREV(LIST_NEXT(currentBlk))=currentBlk;
+				if (LIST_NEXT(LIST_NEXT(currentBlk)) != NULL)
+				{
+					LIST_NEXT(currentBlk) = LIST_NEXT(LIST_NEXT(currentBlk));
+					LIST_PREV(LIST_NEXT(currentBlk)) = currentBlk;
 				}
-				else{
-					LIST_NEXT(currentBlk)=NULL;
+				else
+				{
+					LIST_NEXT(currentBlk) = NULL;
 				}
-				currentBlk->is_free=0;
+				currentBlk->is_free = 0;
 				list.size--;
-				cprintf("%x %x\n",LIST_PREV(LIST_NEXT(currentBlk)) ,currentBlk);
+				// cprintf("%x %x\n",LIST_PREV(LIST_NEXT(currentBlk)) ,currentBlk);
 				// LIST_REMOVE(&list, LIST_NEXT(currentBlk));
-				currentBlk->size = new_size + sizeOfMetaData();
 				return va;
 			}
 		}
 		// cprintf("4\n");
-		 free_block((void *)((struct BlockMetaData *)currentBlk + 1));
+		free_block((void *)((struct BlockMetaData *)currentBlk + 1));
 		// LIST_REMOVE(&list, currentBlk);
 
 		// 	currentBlk->size = 0;
