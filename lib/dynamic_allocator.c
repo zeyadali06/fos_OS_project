@@ -80,10 +80,10 @@ void print_blocks_list(struct MemBlock_LIST list)
 //============================ REQUIRED FUNCTIONS ==================================//
 //==================================================================================//
 
+bool is_initialized = 0;
 //==================================
 // [1] INITIALIZE DYNAMIC ALLOCATOR:
 //==================================
-
 void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpace)
 {
 	//=========================================
@@ -92,7 +92,7 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 		return;
 	//=========================================
 	//=========================================
-
+	is_initialized = 1;
 	// TODO: [PROJECT'23.MS1 - #5] [3] DYNAMIC ALLOCATOR - initialize_dynamic_allocator()
 
 	// IB->size = initSizeOfAllocatedSpace;
@@ -118,6 +118,15 @@ void *alloc_block_FF(uint32 size)
 	if (size == 0)
 	{
 		return NULL;
+	}
+
+	if (!is_initialized)
+	{
+		uint32 required_size = size + sizeOfMetaData();
+		uint32 da_start = (uint32)sbrk(required_size);
+		// get new break since it's page aligned! thus, the size can be more than the required one
+		uint32 da_break = (uint32)sbrk(0);
+		initialize_dynamic_allocator(da_start, da_break - da_start);
 	}
 
 	LIST_FOREACH(blkPtr, &list)
@@ -398,7 +407,7 @@ void *realloc_block_FF(void *va, uint32 new_size)
 
 				// cprintf("2\n");
 				int currSize = currentBlk->size;
-				int nextSize = (LIST_NEXT(currentBlk)->size+currSize)-(new_size + sizeOfMetaData());
+				int nextSize = (LIST_NEXT(currentBlk)->size + currSize) - (new_size + sizeOfMetaData());
 				currentBlk->size = new_size + sizeOfMetaData();
 				LIST_NEXT(currentBlk)->size = 0;
 				LIST_NEXT(currentBlk)->is_free = 0;

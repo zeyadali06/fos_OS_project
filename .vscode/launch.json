@@ -18,8 +18,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/fos_cygwin/FOS_CODES/fos_OS_project/kern/tests",
-      "program": "c:/fos_cygwin/FOS_CODES/fos_OS_project/kern/tests/build/Debug/outDebug",
+      "cwd": "c:/fos_cygwin/FOS_CODES/FOS_PROJECT_2023_Template/lib",
+      "program": "c:/fos_cygwin/FOS_CODES/FOS_PROJECT_2023_Template/lib/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
