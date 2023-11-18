@@ -8,7 +8,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 {
 	// TODO: [PROJECT'23.MS2 - #01] [1] KERNEL HEAP - initialize_kheap_dynamic_allocator()
 	// Initialize the dynamic allocator of kernel heap with the given start address, size & limit
-	// All pages in the given range should be allocated
+	// All pages in the given range should be allocated and mapped
 	// Remember: call the initialize_dynamic_allocator(..) to complete the initialization
 	// Return:
 	//	On success: 0
@@ -21,9 +21,16 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	brk = daStart + initSizeToAllocate;
 	rlimit = daLimit;
 
-	initialize_dynamic_allocator(daStart, initSizeToAllocate);
+	uint32 virtual_address = daStart;
+	for (int i = 0; i < ROUNDUP(initSizeToAllocate, PAGE_SIZE) / PAGE_SIZE; i++)
+	{
+		struct FrameInfo *ptr;
+		allocate_frame(&ptr);
+		map_frame(ptr_page_directory, ptr, daStart, PERM_WRITEABLE | ~PERM_USER);
+		virtual_address += PAGE_SIZE;
+	}
 
-	create_page_table(ptr_page_directory, daStart);
+	initialize_dynamic_allocator(daStart, initSizeToAllocate);
 
 	// Comment the following line(s) before start coding...
 	// panic("not implemented yet");
