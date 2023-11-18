@@ -4,25 +4,42 @@
 #include <inc/dynamic_allocator.h>
 #include "memory_manager.h"
 
-
 int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate, uint32 daLimit)
 {
-	//TODO: [PROJECT'23.MS2 - #01] [1] KERNEL HEAP - initialize_kheap_dynamic_allocator()
-	//Initialize the dynamic allocator of kernel heap with the given start address, size & limit
-	//All pages in the given range should be allocated
-	//Remember: call the initialize_dynamic_allocator(..) to complete the initialization
-	//Return:
+	// TODO: [PROJECT'23.MS2 - #01] [1] KERNEL HEAP - initialize_kheap_dynamic_allocator()
+	// Initialize the dynamic allocator of kernel heap with the given start address, size & limit
+	// All pages in the given range should be allocated and mapped
+	// Remember: call the initialize_dynamic_allocator(..) to complete the initialization
+	// Return:
 	//	On success: 0
 	//	Otherwise (if no memory OR initial size exceed the given limit): E_NO_MEM
 
-	//Comment the following line(s) before start coding...
-	panic("not implemented yet");
+	if (daStart + initSizeToAllocate > daLimit)
+		return E_NO_MEM;
+
+	startOfKernalHeap = daStart;
+	brk = daStart + initSizeToAllocate;
+	rlimit = daLimit;
+
+	uint32 virtual_address = daStart;
+	for (int i = 0; i < ROUNDUP(initSizeToAllocate, PAGE_SIZE) / PAGE_SIZE; i++)
+	{
+		struct FrameInfo *ptr;
+		allocate_frame(&ptr);
+		map_frame(ptr_page_directory, ptr, daStart, PERM_WRITEABLE | ~PERM_USER);
+		virtual_address += PAGE_SIZE;
+	}
+
+	initialize_dynamic_allocator(daStart, initSizeToAllocate);
+
+	// Comment the following line(s) before start coding...
+	// panic("not implemented yet");
 	return 0;
 }
 
-void* sbrk(int increment)
+void *sbrk(int increment)
 {
-	//TODO: [PROJECT'23.MS2 - #02] [1] KERNEL HEAP - sbrk()
+	// TODO: [PROJECT'23.MS2 - #02] [1] KERNEL HEAP - sbrk()
 	/* increment > 0: move the segment break of the kernel to increase the size of its heap,
 	 * 				you should allocate pages and map them into the kernel virtual address space as necessary,
 	 * 				and returns the address of the previous break (i.e. the beginning of newly mapped memory).
@@ -38,60 +55,57 @@ void* sbrk(int increment)
 	 * 		or the break exceed the limit of the dynamic allocator. If sbrk fails, kernel should panic(...)
 	 */
 
-	//MS2: COMMENT THIS LINE BEFORE START CODING====
-	return (void*)-1 ;
+	// MS2: COMMENT THIS LINE BEFORE START CODING====
+	return (void *)-1;
 	panic("not implemented yet");
 }
 
-
-void* kmalloc(unsigned int size)
+void *kmalloc(unsigned int size)
 {
-	//TODO: [PROJECT'23.MS2 - #03] [1] KERNEL HEAP - kmalloc()
-	//refer to the project presentation and documentation for details
-	// use "isKHeapPlacementStrategyFIRSTFIT() ..." functions to check the current strategy
+	// TODO: [PROJECT'23.MS2 - #03] [1] KERNEL HEAP - kmalloc()
+	// refer to the project presentation and documentation for details
+	//  use "isKHeapPlacementStrategyFIRSTFIT() ..." functions to check the current strategy
 
-	//change this "return" according to your answer
+	// change this "return" according to your answer
 	kpanic_into_prompt("kmalloc() is not implemented yet...!!");
 	return NULL;
 }
 
-void kfree(void* virtual_address)
+void kfree(void *virtual_address)
 {
-	//TODO: [PROJECT'23.MS2 - #04] [1] KERNEL HEAP - kfree()
-	//refer to the project presentation and documentation for details
-	// Write your code here, remove the panic and write your code
+	// TODO: [PROJECT'23.MS2 - #04] [1] KERNEL HEAP - kfree()
+	// refer to the project presentation and documentation for details
+	//  Write your code here, remove the panic and write your code
 	panic("kfree() is not implemented yet...!!");
 }
 
 unsigned int kheap_virtual_address(unsigned int physical_address)
 {
-	//TODO: [PROJECT'23.MS2 - #05] [1] KERNEL HEAP - kheap_virtual_address()
-	//refer to the project presentation and documentation for details
-	// Write your code here, remove the panic and write your code
+	// TODO: [PROJECT'23.MS2 - #05] [1] KERNEL HEAP - kheap_virtual_address()
+	// refer to the project presentation and documentation for details
+	//  Write your code here, remove the panic and write your code
 	panic("kheap_virtual_address() is not implemented yet...!!");
 
-	//EFFICIENT IMPLEMENTATION ~O(1) IS REQUIRED ==================
+	// EFFICIENT IMPLEMENTATION ~O(1) IS REQUIRED ==================
 
-	//change this "return" according to your answer
+	// change this "return" according to your answer
 	return 0;
 }
 
 unsigned int kheap_physical_address(unsigned int virtual_address)
 {
-	//TODO: [PROJECT'23.MS2 - #06] [1] KERNEL HEAP - kheap_physical_address()
-	//refer to the project presentation and documentation for details
-	// Write your code here, remove the panic and write your code
+	// TODO: [PROJECT'23.MS2 - #06] [1] KERNEL HEAP - kheap_physical_address()
+	// refer to the project presentation and documentation for details
+	//  Write your code here, remove the panic and write your code
 	panic("kheap_physical_address() is not implemented yet...!!");
 
-	//change this "return" according to your answer
+	// change this "return" according to your answer
 	return 0;
 }
-
 
 void kfreeall()
 {
 	panic("Not implemented!");
-
 }
 
 void kshrink(uint32 newSize)
@@ -103,9 +117,6 @@ void kexpand(uint32 newSize)
 {
 	panic("Not implemented!");
 }
-
-
-
 
 //=================================================================================//
 //============================== BONUS FUNCTION ===================================//
@@ -122,8 +133,8 @@ void kexpand(uint32 newSize)
 
 void *krealloc(void *virtual_address, uint32 new_size)
 {
-	//TODO: [PROJECT'23.MS2 - BONUS#1] [1] KERNEL HEAP - krealloc()
-	// Write your code here, remove the panic and write your code
+	// TODO: [PROJECT'23.MS2 - BONUS#1] [1] KERNEL HEAP - krealloc()
+	//  Write your code here, remove the panic and write your code
 	return NULL;
 	panic("krealloc() is not implemented yet...!!");
 }
