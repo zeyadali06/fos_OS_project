@@ -17,9 +17,9 @@ uint32 _KHeapPlacementStrategy;
 #define KHP_PLACE_NEXTFIT 	0x3
 #define KHP_PLACE_WORSTFIT 	0x4
 
-uint32 startOfKernalHeap;
-uint32 brk;
-uint32 rlimit;
+uint32* startOfKernalHeap;
+uint32* brk;
+uint32* rlimit;
 
 static inline void setKHeapPlacementStrategyCONTALLOC(){_KHeapPlacementStrategy = KHP_PLACE_CONTALLOC;}
 static inline void setKHeapPlacementStrategyFIRSTFIT(){_KHeapPlacementStrategy = KHP_PLACE_FIRSTFIT;}

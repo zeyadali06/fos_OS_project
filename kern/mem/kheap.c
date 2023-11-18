@@ -13,21 +13,26 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	// Return:
 	//	On success: 0
 	//	Otherwise (if no memory OR initial size exceed the given limit): E_NO_MEM
-
+	// initSizeToAllocate *= 2;
 	if (daStart + initSizeToAllocate > daLimit)
 		return E_NO_MEM;
 
-	startOfKernalHeap = daStart;
-	brk = daStart + initSizeToAllocate;
-	rlimit = daLimit;
+	startOfKernalHeap = (uint32 *)daStart;
+	brk = (uint32 *)(daStart + initSizeToAllocate);
+	rlimit = (uint32 *)daLimit;
 
-	uint32 virtual_address = daStart;
+	// cprintf("%x %x %d %d\n", daStart, startOfKernalHeap, daStart, startOfKernalHeap);
+	// cprintf("%x %x %d %d\n", initSizeToAllocate, brk, initSizeToAllocate, brk);
+	// cprintf("%x %x %d %d\n", daLimit, rlimit, daLimit, rlimit);
+
+	void *virtual_address = (void *)daStart;
 	for (int i = 0; i < ROUNDUP(initSizeToAllocate, PAGE_SIZE) / PAGE_SIZE; i++)
 	{
 		struct FrameInfo *ptr;
 		allocate_frame(&ptr);
-		map_frame(ptr_page_directory, ptr, daStart, PERM_WRITEABLE | ~PERM_USER);
+		map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE | ~PERM_USER);
 		virtual_address += PAGE_SIZE;
+		// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE | ~PERM_USER));
 	}
 
 	initialize_dynamic_allocator(daStart, initSizeToAllocate);
