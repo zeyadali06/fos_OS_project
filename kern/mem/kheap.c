@@ -13,7 +13,10 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	// Return:
 	//	On success: 0
 	//	Otherwise (if no memory OR initial size exceed the given limit): E_NO_MEM
-	// initSizeToAllocate *= 2;
+
+	// initSizeToAllocate *= 3000;
+	// cprintf("%d\n", free_frame_list.size);
+
 	if (daStart + initSizeToAllocate > daLimit)
 		return E_NO_MEM;
 
@@ -25,17 +28,38 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	// cprintf("%x %x %d %d\n", initSizeToAllocate, brk, initSizeToAllocate, brk);
 	// cprintf("%x %x %d %d\n", daLimit, rlimit, daLimit, rlimit);
 
-	void *virtual_address = (void *)daStart;
+	// cprintf("%d\n", calculate_available_frames().freeBuffered + calculate_available_frames().freeNotBuffered + calculate_available_frames().modified);
+
+	uint32 virtual_address = daStart;
+
 	for (int i = 0; i < ROUNDUP(initSizeToAllocate, PAGE_SIZE) / PAGE_SIZE; i++)
 	{
+		// uint32 *ptr_table1 = NULL;
+		// get_page_table(ptr_page_directory, virtual_address, &ptr_table1);
+		// cprintf("%x\n", ptr_table1);
+
 		struct FrameInfo *ptr;
 		allocate_frame(&ptr);
+		// cprintf("ok %d\n", i);
 		map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE | ~PERM_USER);
+		// cprintf("%d\n", virtual_address);
+		// cprintf("%x\n", virtual_address);
+		// cprintf("%d\n", *virtual_address);
+		// cprintf("%x\n", *virtual_address);
+
+		// uint32 *ptr_table2 = NULL;
+		// get_page_table(ptr_page_directory, virtual_address, &ptr_table2);
+		// cprintf("%x\n", ptr_table2);
+
+		// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, daStart, PERM_WRITEABLE | ~PERM_USER));
 		virtual_address += PAGE_SIZE;
-		// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE | ~PERM_USER));
 	}
 
+	// cprintf("%d\n", free_frame_list.size);
+
 	initialize_dynamic_allocator(daStart, initSizeToAllocate);
+
+	// cprintf("%d\n", calculate_available_frames().freeBuffered + calculate_available_frames().freeNotBuffered + calculate_available_frames().modified);
 
 	// Comment the following line(s) before start coding...
 	// panic("not implemented yet");
@@ -60,9 +84,50 @@ void *sbrk(int increment)
 	 * 		or the break exceed the limit of the dynamic allocator. If sbrk fails, kernel should panic(...)
 	 */
 
+	if (increment == 0)
+		return (void *)brk;
+
+	if (increment > 0)
+	{
+		if (brk + ROUNDUP(increment, PAGE_SIZE) < rlimit && (ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE) >= free_frame_list.size)
+		{
+			uint32 prevBrk = (uint32)brk;
+			for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
+			{
+				struct FrameInfo *ptr;
+				allocate_frame(&ptr);
+				map_frame(ptr_page_directory, ptr, (uint32)brk, PERM_WRITEABLE | ~PERM_USER);
+				// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE | ~PERM_USER));
+				brk += PAGE_SIZE;
+			}
+			return (void *)prevBrk;
+		}
+		else
+		{
+			panic("Not enough memory");
+		}
+	}
+
+	if (increment < 0)
+	{
+		increment *= -1;
+		for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
+		{
+			struct FrameInfo *ptr;
+			uint32 *ptrPageTable;
+
+			unmap_frame(ptr_page_directory, (uint32)brk);
+			ptr = get_frame_info(ptr_page_directory, (uint32)brk, &ptrPageTable);
+			free_frame(ptr);
+
+			brk -= PAGE_SIZE;
+		}
+		return (void *)brk;
+	}
+
 	// MS2: COMMENT THIS LINE BEFORE START CODING====
 	return (void *)-1;
-	panic("not implemented yet");
+	// panic("not implemented yet");
 }
 
 void *kmalloc(unsigned int size)

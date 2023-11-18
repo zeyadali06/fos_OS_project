@@ -161,14 +161,12 @@ void *alloc_block_FF(uint32 size)
 			}
 		}
 	}
-	if (sbrk(size + sizeOfMetaData()) != (void *)-1)
-	{
-		return alloc_block_FF(size);
-	}
-	else
-	{
-		return NULL;
-	}
+
+	struct BlockMetaData *lastMD = (struct BlockMetaData *)(sbrk(size + sizeOfMetaData()));
+	lastMD->is_free = 0;
+	lastMD->size = ROUNDUP(size + sizeOfMetaData(), PAGE_SIZE);
+	free_block((void *)(lastMD + sizeOfMetaData()));
+	return alloc_block_FF(size);
 }
 
 //=========================================
@@ -298,6 +296,7 @@ void free_block(void *va)
 	// TODO: [PROJECT'23.MS1 - #7] [3] DYNAMIC ALLOCATOR - free_block()
 	if (va == NULL)
 		return;
+
 	struct BlockMetaData *myblc = ((struct BlockMetaData *)va - 1);
 	if (myblc->is_free == 0)
 	{
