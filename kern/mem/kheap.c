@@ -14,9 +14,6 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	//	On success: 0
 	//	Otherwise (if no memory OR initial size exceed the given limit): E_NO_MEM
 
-	// initSizeToAllocate *= 3000;
-	// cprintf("%d\n", free_frame_list.size);
-
 	if (daStart + initSizeToAllocate > daLimit)
 		return E_NO_MEM;
 
@@ -24,42 +21,23 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	brk = (uint32 *)(daStart + initSizeToAllocate);
 	rlimit = (uint32 *)daLimit;
 
-	// cprintf("%x %x %d %d\n", daStart, startOfKernalHeap, daStart, startOfKernalHeap);
-	// cprintf("%x %x %d %d\n", initSizeToAllocate, brk, initSizeToAllocate, brk);
-	// cprintf("%x %x %d %d\n", daLimit, rlimit, daLimit, rlimit);
-
-	// cprintf("%d\n", calculate_available_frames().freeBuffered + calculate_available_frames().freeNotBuffered + calculate_available_frames().modified);
-
 	uint32 virtual_address = daStart;
 
 	for (int i = 0; i < ROUNDUP(initSizeToAllocate, PAGE_SIZE) / PAGE_SIZE; i++)
 	{
-		// uint32 *ptr_table1 = NULL;
-		// get_page_table(ptr_page_directory, virtual_address, &ptr_table1);
-		// cprintf("%x\n", ptr_table1);
-
 		struct FrameInfo *ptr;
-		allocate_frame(&ptr);
-		// cprintf("ok %d\n", i);
-		map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE | ~PERM_USER);
-		// cprintf("%d\n", virtual_address);
-		// cprintf("%x\n", virtual_address);
-		// cprintf("%d\n", *virtual_address);
-		// cprintf("%x\n", *virtual_address);
-
-		// uint32 *ptr_table2 = NULL;
-		// get_page_table(ptr_page_directory, virtual_address, &ptr_table2);
-		// cprintf("%x\n", ptr_table2);
-
-		// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, daStart, PERM_WRITEABLE | ~PERM_USER));
+		if (allocate_frame(&ptr) == 0)
+		{
+			map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE);
+		}
+		else
+		{
+			return E_NO_MEM;
+		}
 		virtual_address += PAGE_SIZE;
 	}
 
-	// cprintf("%d\n", free_frame_list.size);
-
 	initialize_dynamic_allocator(daStart, initSizeToAllocate);
-
-	// cprintf("%d\n", calculate_available_frames().freeBuffered + calculate_available_frames().freeNotBuffered + calculate_available_frames().modified);
 
 	// Comment the following line(s) before start coding...
 	// panic("not implemented yet");
@@ -96,8 +74,8 @@ void *sbrk(int increment)
 			{
 				struct FrameInfo *ptr;
 				allocate_frame(&ptr);
-				map_frame(ptr_page_directory, ptr, (uint32)brk, PERM_WRITEABLE | ~PERM_USER);
-				// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE | ~PERM_USER));
+				map_frame(ptr_page_directory, ptr, (uint32)brk, PERM_WRITEABLE);
+				// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE));
 				brk += PAGE_SIZE;
 			}
 			return (void *)prevBrk;
@@ -110,18 +88,19 @@ void *sbrk(int increment)
 
 	if (increment < 0)
 	{
+		uint32 prevBrk = (uint32)brk;
 		increment *= -1;
-		for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
+		for (int i = 0; i < ROUNDDOWN(increment, PAGE_SIZE) / PAGE_SIZE; i++)
 		{
 			struct FrameInfo *ptr;
 			uint32 *ptrPageTable;
-
 			unmap_frame(ptr_page_directory, (uint32)brk);
 			ptr = get_frame_info(ptr_page_directory, (uint32)brk, &ptrPageTable);
 			free_frame(ptr);
 
 			brk -= PAGE_SIZE;
 		}
+		brk = (uint32 *)(prevBrk - increment);
 		return (void *)brk;
 	}
 
@@ -135,9 +114,157 @@ void *kmalloc(unsigned int size)
 	// TODO: [PROJECT'23.MS2 - #03] [1] KERNEL HEAP - kmalloc()
 	// refer to the project presentation and documentation for details
 	//  use "isKHeapPlacementStrategyFIRSTFIT() ..." functions to check the current strategy
+	// 	uint32 tset;
+	// 	for (int i = 0; i < 1024; i++)
+	// 	{
+	// (uint32)ptr_page_directory
+	// 	}
+
+	if (size >= (KERNEL_HEAP_MAX - ((uint32)rlimit + 4096)) || size >= ((uint32)rlimit - KERNEL_HEAP_START))
+	{
+		return NULL;
+	}
+
+	if (size <= DYN_ALLOC_MAX_BLOCK_SIZE)
+	{
+		return alloc_block(size, DA_FF);
+	}
+
+	// uint32 *ptr = 0x0;
+	// for (int n = 0; n < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; n++)
+	// {
+	// 	for (int i = 0; i < 1024 * 1024; i++)
+	// 	{
+	// 		uint32 *ptrPageTable;
+	// 		struct FrameInfo *res = get_frame_info(ptr_page_directory, (uint32)ptr, &ptrPageTable);
+	// 		if (res == 0)
+	// 		{
+	// 			allocate_frame(&res);
+	// 			map_frame(ptr_page_directory, res, (uint32)ptr, PERM_WRITEABLE);
+	// 			break;
+	// 		}
+	// 		ptr += 0x1000;
+	// 	}
+	//
+
+	// struct FrameInfo *ptr_frame_info;
+	// cprintf("ok\n");
+	// uint32 *ptrPage = create_page_table(ptr_page_directory, va);
+	// allocate_frame(&ptr_frame_info);
+	// map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
+
+	uint32 va = 0x1000;
+	for (int n = 0; n < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; n++)
+	{
+		for (int i = 0; i < (1024 * 1024); i++)
+		{
+			uint32 *ptrPage;
+			if (get_page_table(ptr_page_directory, (uint32)va, &ptrPage) == TABLE_IN_MEMORY)
+			{
+				// cprintf("Page table exist\n");
+
+				if ((uint32)ptrPage + PTX(va) == 0)
+				{
+					struct FrameInfo *ptr_frame_info;
+					if (allocate_frame(&ptr_frame_info) == 0)
+					{
+						map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
+						break;
+					}
+					else
+					{
+						return NULL;
+					}
+				}
+				else
+				{
+					va += 0x1000;
+					continue;
+				}
+			}
+			else
+			{
+				// cprintf("Page table not exist\n");
+				ptrPage = create_page_table(ptr_page_directory, va);
+				for (int r = 0; r < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE) - n; r++)
+				{
+					struct FrameInfo *ptr_frame_info;
+					if (allocate_frame(&ptr_frame_info) == 0)
+					{
+						map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
+						// cprintf("Allocated Done Successfullly\n");
+						break;
+					}
+					else
+					{
+						return NULL;
+					}
+					va += 0x1000;
+				}
+			}
+			// cprintf("%x %d\n", ptrPage, i);
+		}
+	}
+
+	// for (int n = 0; n < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; n++)
+	// {
+	// 	uint32 *va = ptr_page_directory;
+	// 	int ptrDirFN; // f# in an entry in the directory
+	// 	cprintf("%x\n", va);
+	// 	bool allocated = 0;
+	// 	for (int i = 0; i < 1024; i++) // dir loop
+	// 	{
+	// 		uint32 *ptrPage;
+	// 		int ptrPageFN; // f# in an entry in the page table
+	// 		if (get_page_table(ptr_page_directory, (uint32)va, &ptrPage) == TABLE_IN_MEMORY)
+	// 		{
+	// 			for (int j = 0; j < 1024; j++) // page table loop
+	// 			{
+	// 				ptrPageFN = ptrPage != NULL ? (uint32)*ptrPage : -1;
+	// 				// cprintf("%d\n", ptrPageFN);
+	// 				if (ptrPageFN == -1)
+	// 				{
+	// 					cprintf("Enter Enter Enter Enter Enter Enter");
+	// 					struct FrameInfo *fi;
+	// 					allocate_frame(&fi);
+	// 					map_frame(ptr_page_directory, fi, (uint32)ptrPage, PERM_WRITEABLE);
+	// 					allocated = 1;
+	// 					break;
+	// 				}
+	// 				ptrPage += 1;
+	// 			}
+	// 			cprintf("quit third\n");
+	// 		}
+	// 		else
+	// 		{
+	// 			cprintf("Create Page Table\n");
+	// 			create_page_table(ptr_page_directory, (uint32)va);
+	// 		}
+	// 		ptrDirFN = va != NULL ? (uint32)*va : -1;
+	// 		va += 1;
+	// 		if (allocated)
+	// 			break;
+	// 		// if (ptrDirFN != NULL)
+	// 		// {
+	// 		// 	uint32 *ptrPage;
+	// 		// 	uint32 ptrPageFN; // f# in an entry in the page table
+	// 		// 	if (get_page_table(ptr_page_directory, (uint32)va, &ptrPage) == TABLE_IN_MEMORY)
+	// 		// 	{
+	// 		// 		for (int j = 0; j < 1024; j++)
+	// 		// 		{
+	// 		// 			ptrPageFN = (uint32)ptrPage;
+	// 		// 			ptrPage += 1;
+	// 		// 			if (ptrPageFN != NULL)
+	// 		// 		}
+	// 		// 	}
+	// 		// }
+	// 	}
+	// 	cprintf("quit second\n");
+	// }
+	// cprintf("quit first\n");
 
 	// change this "return" according to your answer
-	kpanic_into_prompt("kmalloc() is not implemented yet...!!");
+	// kpanic_into_prompt("kmalloc() is not implemented yet...!!");
 	return NULL;
 }
 
