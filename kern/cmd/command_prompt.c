@@ -8,6 +8,7 @@
 #include <kern/tests/tst_handler.h>
 #include "commands.h"
 #include <kern\tests\test_dynamic_allocator.h>
+#include <kern\tests\test_kheap.h>
 
 // ********** This DosKey supported readline function is implemented by **********
 // ********** Abdullah Najuib ( FCIS T.A.), 3rd year student, FCIS, 2012
@@ -330,7 +331,9 @@ void run_command_prompt()
 		// ********** 				Combined, edited and modified by TA\Ghada Hamed				**********
 		memset(command_line, 0, sizeof(command_line));
 		command_prompt_readline("FOS> ", command_line);
-
+		test_kmalloc();
+		// test_kmalloc_firstfit1();
+		// test_kmalloc_firstfit2();
 		// parse and execute the command
 		if (command_line != NULL)
 			if (execute_command(command_line) < 0)

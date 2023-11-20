@@ -122,19 +122,22 @@ void *kmalloc(unsigned int size)
 	// 	{
 	// (uint32)ptr_page_directory
 	// 	}
-	cprintf("size: %d\n", size);
+	cprintf("----------------------------------------------------------------\n");
+	cprintf("size: %d %d %d\n", size, ROUNDUP(size, PAGE_SIZE), ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
 	if (size >= (KERNEL_HEAP_MAX - ((uint32)rlimit + 4096)) || size >= ((uint32)rlimit - KERNEL_HEAP_START))
 	{
+		cprintf("----------------------------------------------------------------\n");
 		return NULL;
 	}
 
 	if (size <= DYN_ALLOC_MAX_BLOCK_SIZE)
 	{
+		cprintf("----------------------------------------------------------------\n");
 		return alloc_block(size, DA_FF);
 	}
 
 	uint32 va = (uint32)rlimit + PAGE_SIZE;
-
+	cprintf("va: %x\n", va);
 	for (int i = 0; i < (1024 * 1024); i++)
 	{
 		uint32 *ptrPage;
@@ -142,15 +145,18 @@ void *kmalloc(unsigned int size)
 		{
 			// cprintf("Page table exist %d\n", i);
 			// cprintf("%x %x %x\n", ptrPage, PTX(va), *((uint32 *)((uint32)ptrPage + PTX(va))));
+			// cprintf("page entry: %x\n", *((uint32 *)((uint32)ptrPage + PTX(va))));
 
-			if (*((uint32 *)((uint32)ptrPage + PTX(va))) == 0)
+			// if (*((uint32 *)((uint32)ptrPage + PTX(va))) == 0)
+			if ((uint32)(ptrPage[PTX(va)]) == 0)
 			{
 				bool enoughFreeSpace = 1;
 				uint32 checkableVA = va;
 				uint32 returnedVA = va;
 				for (int l = 0; l < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; l++)
 				{
-					if (*((uint32 *)((uint32)ptrPage + PTX(checkableVA))) != 0)
+					// if (*((uint32 *)((uint32)ptrPage + PTX(checkableVA))) != 0)
+					if ((uint32)(ptrPage[PTX(checkableVA)]) != 0)
 					{
 						enoughFreeSpace = 0;
 						break;
@@ -164,7 +170,7 @@ void *kmalloc(unsigned int size)
 					continue;
 				}
 
-				for (int l = 0; l < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; l++)
+				for (int l = 0; l < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE); l++)
 				{
 					// cprintf("Enter\n");
 					struct FrameInfo *ptr_frame_info;
@@ -174,11 +180,13 @@ void *kmalloc(unsigned int size)
 					}
 					else
 					{
+						cprintf("----------------------------------------------------------------\n");
 						return NULL;
 					}
 					va += 0x1000;
 				}
 				cprintf("Free Entry Loaded Succesfully %d %x %x\n", i, returnedVA, va);
+				cprintf("----------------------------------------------------------------\n");
 				return (void *)returnedVA;
 			}
 			else
@@ -191,35 +199,6 @@ void *kmalloc(unsigned int size)
 			cprintf("Page Table Not Exist %d\n", i);
 			va += 0x1000;
 		}
-		// else
-		// {
-		// 	continue;
-		// 	// cprintf("else\n");
-		// 	for (int m = 0; m < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; m++)
-		// 	{
-		// 		struct FrameInfo *ptr_frame_info;
-		// 		allocate_frame(&ptr_frame_info);
-		// 		map_frame(ptr_page_directory, ptr_frame_info, (uint32)va, PERM_WRITEABLE);
-		// 	}
-		// 	return (void *)va;
-		// 	// // cprintf("Page table not exist\n");
-		// 	// ptrPage = create_page_table(ptr_page_directory, va);
-		// 	// for (int r = 0; r < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE) - n; r++)
-		// 	// {
-		// 	// 	struct FrameInfo *ptr_frame_info;
-		// 	// 	if (allocate_frame(&ptr_frame_info) == 0)
-		// 	// 	{
-		// 	// 		map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
-		// 	// 		// cprintf("Allocated Done Successfullly\n");
-		// 	// 		break;
-		// 	// 	}
-		// 	// 	else
-		// 	// 	{
-		// 	// 		return NULL;
-		// 	// 	}
-		// 	// 	va += 0x1000;
-		// 	// }
-		// }
 
 		if (va > KERNEL_HEAP_MAX)
 		{
@@ -229,65 +208,10 @@ void *kmalloc(unsigned int size)
 		// cprintf("%x %d\n", ptrPage, i);
 	}
 
-	// for (int n = 0; n < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; n++)
-	// {
-	// 	uint32 *va = ptr_page_directory;
-	// 	int ptrDirFN; // f# in an entry in the directory
-	// 	cprintf("%x\n", va);
-	// 	bool allocated = 0;
-	// 	for (int i = 0; i < 1024; i++) // dir loop
-	// 	{
-	// 		uint32 *ptrPage;
-	// 		int ptrPageFN; // f# in an entry in the page table
-	// 		if (get_page_table(ptr_page_directory, (uint32)va, &ptrPage) == TABLE_IN_MEMORY)
-	// 		{
-	// 			for (int j = 0; j < 1024; j++) // page table loop
-	// 			{
-	// 				ptrPageFN = ptrPage != NULL ? (uint32)*ptrPage : -1;
-	// 				// cprintf("%d\n", ptrPageFN);
-	// 				if (ptrPageFN == -1)
-	// 				{
-	// 					cprintf("Enter Enter Enter Enter Enter Enter");
-	// 					struct FrameInfo *fi;
-	// 					allocate_frame(&fi);
-	// 					map_frame(ptr_page_directory, fi, (uint32)ptrPage, PERM_WRITEABLE);
-	// 					allocated = 1;
-	// 					break;
-	// 				}
-	// 				ptrPage += 1;
-	// 			}
-	// 			cprintf("quit third\n");
-	// 		}
-	// 		else
-	// 		{
-	// 			cprintf("Create Page Table\n");
-	// 			create_page_table(ptr_page_directory, (uint32)va);
-	// 		}
-	// 		ptrDirFN = va != NULL ? (uint32)*va : -1;
-	// 		va += 1;
-	// 		if (allocated)
-	// 			break;
-	// 		// if (ptrDirFN != NULL)
-	// 		// {
-	// 		// 	uint32 *ptrPage;
-	// 		// 	uint32 ptrPageFN; // f# in an entry in the page table
-	// 		// 	if (get_page_table(ptr_page_directory, (uint32)va, &ptrPage) == TABLE_IN_MEMORY)
-	// 		// 	{
-	// 		// 		for (int j = 0; j < 1024; j++)
-	// 		// 		{
-	// 		// 			ptrPageFN = (uint32)ptrPage;
-	// 		// 			ptrPage += 1;
-	// 		// 			if (ptrPageFN != NULL)
-	// 		// 		}
-	// 		// 	}
-	// 		// }
-	// 	}
-	// 	cprintf("quit second\n");
-	// }
-	// cprintf("quit first\n");
-
 	// change this "return" according to your answer
 	// kpanic_into_prompt("kmalloc() is not implemented yet...!!");
+	cprintf("----------------------------------------------------------------\n");
+
 	return NULL;
 }
 
