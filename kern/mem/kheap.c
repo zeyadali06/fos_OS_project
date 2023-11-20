@@ -284,7 +284,6 @@ void *kmalloc(unsigned int size)
 	// kpanic_into_prompt("kmalloc() is not implemented yet...!!");
 	return NULL;
 }
-
 void kfree(void *virtual_address)
 {
 	// TODO: [PROJECT'23.MS2 - #04] [1] KERNEL HEAP - kfree()
