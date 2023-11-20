@@ -130,70 +130,41 @@ void *kmalloc(unsigned int size)
 		return alloc_block(size, DA_FF);
 	}
 
-	// uint32 *ptr = 0x0;
-	// for (int n = 0; n < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; n++)
-	// {
-	// 	for (int i = 0; i < 1024 * 1024; i++)
-	// 	{
-	// 		uint32 *ptrPageTable;
-	// 		struct FrameInfo *res = get_frame_info(ptr_page_directory, (uint32)ptr, &ptrPageTable);
-	// 		if (res == 0)
-	// 		{
-	// 			allocate_frame(&res);
-	// 			map_frame(ptr_page_directory, res, (uint32)ptr, PERM_WRITEABLE);
-	// 			break;
-	// 		}
-	// 		ptr += 0x1000;
-	// 	}
-	//
+	uint32 va = (uint32)rlimit + PAGE_SIZE;
 
-	// struct FrameInfo *ptr_frame_info;
-	// cprintf("ok\n");
-	// uint32 *ptrPage = create_page_table(ptr_page_directory, va);
-	// allocate_frame(&ptr_frame_info);
-	// map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
-
-	uint32 va = 0x1000;
-	for (int n = 0; n < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; n++)
+	for (int i = 0; i < (1024 * 1024); i++)
 	{
-		for (int i = 0; i < (1024 * 1024); i++)
+		uint32 *ptrPage;
+		if (get_page_table(ptr_page_directory, (uint32)va, &ptrPage) == TABLE_IN_MEMORY)
 		{
-			uint32 *ptrPage;
-			if (get_page_table(ptr_page_directory, (uint32)va, &ptrPage) == TABLE_IN_MEMORY)
-			{
-				// cprintf("Page table exist\n");
+			// cprintf("Page table exist %d\n", i);
+			cprintf("%x %x %x\n", ptrPage, PTX(va), *((uint32 *)((uint32)ptrPage + PTX(va))));
 
-				if ((uint32)ptrPage + PTX(va) == 0)
+			if (*((uint32 *)((uint32)ptrPage + PTX(va))) == 0)
+			{
+				bool enoughFreeSpace = 1;
+				uint32 checkableVA = va;
+				uint32 returnedVA = va;
+				for (int l = 0; l < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; l++)
 				{
-					struct FrameInfo *ptr_frame_info;
-					if (allocate_frame(&ptr_frame_info) == 0)
+					if (*((uint32 *)((uint32)ptrPage + PTX(checkableVA))) != 0)
 					{
-						map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
+						enoughFreeSpace = 0;
 						break;
 					}
-					else
-					{
-						return NULL;
-					}
+					checkableVA += 0x1000;
 				}
-				else
+				if (!enoughFreeSpace)
 				{
 					va += 0x1000;
 					continue;
 				}
-			}
-			else
-			{
-				// cprintf("Page table not exist\n");
-				ptrPage = create_page_table(ptr_page_directory, va);
-				for (int r = 0; r < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE) - n; r++)
+				for (int l = 0; l < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; l++)
 				{
 					struct FrameInfo *ptr_frame_info;
 					if (allocate_frame(&ptr_frame_info) == 0)
 					{
 						map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
-						// cprintf("Allocated Done Successfullly\n");
-						break;
 					}
 					else
 					{
@@ -201,9 +172,54 @@ void *kmalloc(unsigned int size)
 					}
 					va += 0x1000;
 				}
+				cprintf("Free Entry Loaded Succesfully %d\n", i);
+				return (void *)returnedVA;
 			}
-			// cprintf("%x %d\n", ptrPage, i);
+			else
+			{
+				va += 0x1000;
+			}
 		}
+		else
+		{
+			cprintf("Page Table Not Exist %d\n", i);
+			va += 0x1000;
+		}
+		// else
+		// {
+		// 	continue;
+		// 	// cprintf("else\n");
+		// 	for (int m = 0; m < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; m++)
+		// 	{
+		// 		struct FrameInfo *ptr_frame_info;
+		// 		allocate_frame(&ptr_frame_info);
+		// 		map_frame(ptr_page_directory, ptr_frame_info, (uint32)va, PERM_WRITEABLE);
+		// 	}
+		// 	return (void *)va;
+		// 	// // cprintf("Page table not exist\n");
+		// 	// ptrPage = create_page_table(ptr_page_directory, va);
+		// 	// for (int r = 0; r < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE) - n; r++)
+		// 	// {
+		// 	// 	struct FrameInfo *ptr_frame_info;
+		// 	// 	if (allocate_frame(&ptr_frame_info) == 0)
+		// 	// 	{
+		// 	// 		map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
+		// 	// 		// cprintf("Allocated Done Successfullly\n");
+		// 	// 		break;
+		// 	// 	}
+		// 	// 	else
+		// 	// 	{
+		// 	// 		return NULL;
+		// 	// 	}
+		// 	// 	va += 0x1000;
+		// 	// }
+		// }
+		if (va > KERNEL_HEAP_MAX)
+		{
+			cprintf("End Of Kernal Heap\n");
+			break;
+		}
+		// cprintf("%x %d\n", ptrPage, i);
 	}
 
 	// for (int n = 0; n < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; n++)
@@ -267,7 +283,6 @@ void *kmalloc(unsigned int size)
 	// kpanic_into_prompt("kmalloc() is not implemented yet...!!");
 	return NULL;
 }
-
 void kfree(void *virtual_address)
 {
 	// TODO: [PROJECT'23.MS2 - #04] [1] KERNEL HEAP - kfree()
