@@ -67,11 +67,14 @@ void *sbrk(int increment)
 
 	if (increment > 0)
 	{
-		if (brk + ROUNDUP(increment, PAGE_SIZE) < rlimit && (ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE) >= free_frame_list.size)
+		// cprintf("%x %x %x %d\n", brk + ROUNDUP(increment, PAGE_SIZE), rlimit, ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE, free_frame_list.size);
+		if (brk + ROUNDUP(increment, PAGE_SIZE) <= rlimit && (ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE) <= free_frame_list.size)
 		{
+			// cprintf("%d\n", increment);
 			uint32 prevBrk = (uint32)brk;
 			for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
 			{
+				// cprintf("ok\n");
 				struct FrameInfo *ptr;
 				allocate_frame(&ptr);
 				map_frame(ptr_page_directory, ptr, (uint32)brk, PERM_WRITEABLE);
@@ -119,7 +122,7 @@ void *kmalloc(unsigned int size)
 	// 	{
 	// (uint32)ptr_page_directory
 	// 	}
-
+	cprintf("size: %d\n", size);
 	if (size >= (KERNEL_HEAP_MAX - ((uint32)rlimit + 4096)) || size >= ((uint32)rlimit - KERNEL_HEAP_START))
 	{
 		return NULL;
@@ -138,7 +141,7 @@ void *kmalloc(unsigned int size)
 		if (get_page_table(ptr_page_directory, (uint32)va, &ptrPage) == TABLE_IN_MEMORY)
 		{
 			// cprintf("Page table exist %d\n", i);
-			cprintf("%x %x %x\n", ptrPage, PTX(va), *((uint32 *)((uint32)ptrPage + PTX(va))));
+			// cprintf("%x %x %x\n", ptrPage, PTX(va), *((uint32 *)((uint32)ptrPage + PTX(va))));
 
 			if (*((uint32 *)((uint32)ptrPage + PTX(va))) == 0)
 			{
@@ -154,14 +157,16 @@ void *kmalloc(unsigned int size)
 					}
 					checkableVA += 0x1000;
 				}
-				if (!enoughFreeSpace)
+
+				if (enoughFreeSpace == 0)
 				{
 					va += 0x1000;
 					continue;
 				}
+
 				for (int l = 0; l < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; l++)
 				{
-					cprintf("Enter\n");
+					// cprintf("Enter\n");
 					struct FrameInfo *ptr_frame_info;
 					if (allocate_frame(&ptr_frame_info) == 0)
 					{
@@ -173,7 +178,7 @@ void *kmalloc(unsigned int size)
 					}
 					va += 0x1000;
 				}
-				cprintf("Free Entry Loaded Succesfully %d\n", i);
+				cprintf("Free Entry Loaded Succesfully %d %x %x\n", i, returnedVA, va);
 				return (void *)returnedVA;
 			}
 			else
@@ -215,6 +220,7 @@ void *kmalloc(unsigned int size)
 		// 	// 	va += 0x1000;
 		// 	// }
 		// }
+
 		if (va > KERNEL_HEAP_MAX)
 		{
 			cprintf("End Of Kernal Heap\n");
@@ -284,6 +290,7 @@ void *kmalloc(unsigned int size)
 	// kpanic_into_prompt("kmalloc() is not implemented yet...!!");
 	return NULL;
 }
+
 void kfree(void *virtual_address)
 {
 	// TODO: [PROJECT'23.MS2 - #04] [1] KERNEL HEAP - kfree()

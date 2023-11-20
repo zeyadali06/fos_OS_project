@@ -165,7 +165,8 @@ void *alloc_block_FF(uint32 size)
 	struct BlockMetaData *lastMD = (struct BlockMetaData *)(sbrk(size + sizeOfMetaData()));
 	lastMD->is_free = 0;
 	lastMD->size = ROUNDUP(size + sizeOfMetaData(), PAGE_SIZE);
-	free_block((void *)(lastMD + sizeOfMetaData()));
+	LIST_INSERT_TAIL(&list, lastMD);
+	free_block((void *)(lastMD + 1));
 	return alloc_block_FF(size);
 }
 
