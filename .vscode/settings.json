@@ -59,6 +59,8 @@
   "C_Cpp.errorSquiggles": "disabled",
   "files.associations": {
     "*.dart": "dart",
-    "dynamic_allocator.h": "c"
+    "*.rmd": "markdown",
+    "dynamic_allocator.h": "c",
+    "test_kheap.h": "c"
   }
 }

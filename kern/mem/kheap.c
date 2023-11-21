@@ -13,7 +13,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	// Return:
 	//	On success: 0
 	//	Otherwise (if no memory OR initial size exceed the given limit): E_NO_MEM
-	// initSizeToAllocate *= 2;
+
 	if (daStart + initSizeToAllocate > daLimit)
 		return E_NO_MEM;
 
@@ -21,18 +21,20 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	brk = (uint32 *)(daStart + initSizeToAllocate);
 	rlimit = (uint32 *)daLimit;
 
-	// cprintf("%x %x %d %d\n", daStart, startOfKernalHeap, daStart, startOfKernalHeap);
-	// cprintf("%x %x %d %d\n", initSizeToAllocate, brk, initSizeToAllocate, brk);
-	// cprintf("%x %x %d %d\n", daLimit, rlimit, daLimit, rlimit);
+	uint32 virtual_address = daStart;
 
-	void *virtual_address = (void *)daStart;
 	for (int i = 0; i < ROUNDUP(initSizeToAllocate, PAGE_SIZE) / PAGE_SIZE; i++)
 	{
 		struct FrameInfo *ptr;
-		allocate_frame(&ptr);
-		map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE | ~PERM_USER);
+		if (allocate_frame(&ptr) == 0)
+		{
+			map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE);
+		}
+		else
+		{
+			return E_NO_MEM;
+		}
 		virtual_address += PAGE_SIZE;
-		// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE | ~PERM_USER));
 	}
 
 	initialize_dynamic_allocator(daStart, initSizeToAllocate);
@@ -60,9 +62,54 @@ void *sbrk(int increment)
 	 * 		or the break exceed the limit of the dynamic allocator. If sbrk fails, kernel should panic(...)
 	 */
 
+	if (increment == 0)
+		return (void *)brk;
+
+	if (increment > 0)
+	{
+		// cprintf("%x %x %x %d\n", brk + ROUNDUP(increment, PAGE_SIZE), rlimit, ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE, free_frame_list.size);
+		if (brk + ROUNDUP(increment, PAGE_SIZE) <= rlimit && (ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE) <= free_frame_list.size)
+		{
+			// cprintf("%d\n", increment);
+			uint32 prevBrk = (uint32)brk;
+			for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
+			{
+				// cprintf("ok\n");
+				struct FrameInfo *ptr;
+				allocate_frame(&ptr);
+				map_frame(ptr_page_directory, ptr, (uint32)brk, PERM_WRITEABLE);
+				// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE));
+				brk += PAGE_SIZE;
+			}
+			return (void *)prevBrk;
+		}
+		else
+		{
+			panic("Not enough memory");
+		}
+	}
+
+	if (increment < 0)
+	{
+		uint32 prevBrk = (uint32)brk;
+		increment *= -1;
+		for (int i = 0; i < ROUNDDOWN(increment, PAGE_SIZE) / PAGE_SIZE; i++)
+		{
+			struct FrameInfo *ptr;
+			uint32 *ptrPageTable;
+			unmap_frame(ptr_page_directory, (uint32)brk);
+			ptr = get_frame_info(ptr_page_directory, (uint32)brk, &ptrPageTable);
+			free_frame(ptr);
+
+			brk -= PAGE_SIZE;
+		}
+		brk = (uint32 *)(prevBrk - increment);
+		return (void *)brk;
+	}
+
 	// MS2: COMMENT THIS LINE BEFORE START CODING====
 	return (void *)-1;
-	panic("not implemented yet");
+	// panic("not implemented yet");
 }
 
 void *kmalloc(unsigned int size)
@@ -70,9 +117,114 @@ void *kmalloc(unsigned int size)
 	// TODO: [PROJECT'23.MS2 - #03] [1] KERNEL HEAP - kmalloc()
 	// refer to the project presentation and documentation for details
 	//  use "isKHeapPlacementStrategyFIRSTFIT() ..." functions to check the current strategy
+	// 	uint32 tset;
+	// 	for (int i = 0; i < 1024; i++)
+	// 	{
+	// (uint32)ptr_page_directory
+	// 	}
+	// cprintf("----------------------------------------------------------------\n");
+	// cprintf("size: %d %d %d\n", size, ROUNDUP(size, PAGE_SIZE), ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
+	if (size >= (KERNEL_HEAP_MAX - ((uint32)rlimit + 4096)) || size >= ((uint32)rlimit - KERNEL_HEAP_START))
+	{
+		// cprintf("----------------------------------------------------------------\n");
+		return NULL;
+	}
+
+	if (size <= DYN_ALLOC_MAX_BLOCK_SIZE)
+	{
+		// cprintf("----------------------------------------------------------------\n");
+		return alloc_block(size, DA_FF);
+	}
+
+	uint32 va = (uint32)rlimit + PAGE_SIZE;
+	// cprintf("va: %x\n", va);
+	for (int i = 0; i < (1024 * 1024); i++)
+	{
+		uint32 *ptrPage;
+		if (get_page_table(ptr_page_directory, (uint32)va, &ptrPage) == TABLE_IN_MEMORY)
+		{
+			// cprintf("Page table exist %d\n", i);
+			// cprintf("%x %x %x\n", ptrPage, PTX(va), (uint32)(ptrPage[PTX(va)]));
+			// cprintf("page entry: %x\n", (uint32)(ptrPage[PTX(va)]));
+
+			if ((uint32)(ptrPage[PTX(va)]) == 0)
+			{
+				bool enoughFreeSpace = 1;
+				uint32 checkableVA = va;
+				uint32 returnedVA = va;
+				for (int l = 0; l < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; l++)
+				{
+
+					if ((uint32)(ptrPage[PTX(checkableVA)]) != 0)
+					{
+						enoughFreeSpace = 0;
+						// cprintf("Exit\n");
+						break;
+					}
+
+					if (PTX(checkableVA) == 1023)
+					{
+						checkableVA += 0x1000;
+						// cprintf("Already Bigger Than 1023\n");
+						if (get_page_table(ptr_page_directory, (uint32)checkableVA, &ptrPage) == TABLE_IN_MEMORY)
+						{
+							// cprintf("Another Table is Avaliable\n");
+						}
+						else
+						{
+							return NULL;
+						}
+					}
+				}
+
+				if (enoughFreeSpace == 0)
+				{
+					va += 0x1000;
+					continue;
+				}
+
+				for (int l = 0; l < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE); l++)
+				{
+					// cprintf("Enter\n");
+					struct FrameInfo *ptr_frame_info;
+					if (allocate_frame(&ptr_frame_info) == 0)
+					{
+						map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
+					}
+					else
+					{
+						// cprintf("----------------------------------------------------------------\n");
+						return NULL;
+					}
+					va += 0x1000;
+				}
+				// cprintf("Free Entry Loaded Succesfully %d %x %x\n", i, returnedVA, va);
+				// cprintf("----------------------------------------------------------------\n");
+				return (void *)returnedVA;
+			}
+			else
+			{
+				va += 0x1000;
+			}
+		}
+		else
+		{
+			// cprintf("Page Table Not Exist %d\n", i);
+			va += 0x1000;
+		}
+
+		if (va > KERNEL_HEAP_MAX)
+		{
+			// cprintf("End Of Kernal Heap\n");
+			break;
+		}
+		// cprintf("%x %d\n", ptrPage, i);
+	}
 
 	// change this "return" according to your answer
-	kpanic_into_prompt("kmalloc() is not implemented yet...!!");
+	// kpanic_into_prompt("kmalloc() is not implemented yet...!!");
+	// cprintf("----------------------------------------------------------------\n");
+
 	return NULL;
 }
 
