@@ -5,8 +5,9 @@
 # error "This is a FOS kernel header; user programs should not #include it"
 #endif
 
+#include <inc/queue.h>
 #include <inc/types.h>
-
+#include <inc/memlayout.h>
 
 /*2017*/
 uint32 _KHeapPlacementStrategy;
@@ -20,6 +21,8 @@ uint32 _KHeapPlacementStrategy;
 uint32* startOfKernalHeap;
 uint32* brk;
 uint32* rlimit;
+
+uint32* addresses[NUM_OF_KHEAP_PAGES + 1];
 
 static inline void setKHeapPlacementStrategyCONTALLOC(){_KHeapPlacementStrategy = KHP_PLACE_CONTALLOC;}
 static inline void setKHeapPlacementStrategyFIRSTFIT(){_KHeapPlacementStrategy = KHP_PLACE_FIRSTFIT;}

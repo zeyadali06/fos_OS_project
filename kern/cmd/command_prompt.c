@@ -331,7 +331,9 @@ void run_command_prompt()
 		// ********** 				Combined, edited and modified by TA\Ghada Hamed				**********
 		memset(command_line, 0, sizeof(command_line));
 		command_prompt_readline("FOS> ", command_line);
-		test_kmalloc();
+		// test_kfree();
+		// test_kfree_bestfirstfit();
+		// test_kmalloc();
 		// test_kmalloc_firstfit1();
 		// test_kmalloc_firstfit2();
 		// parse and execute the command
