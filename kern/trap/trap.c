@@ -374,12 +374,26 @@ void fault_handler(struct Trapframe *tf)
 	{
 		if (userTrap)
 		{
+
+if(((uint32)fault_va& PERM_WRITEABLE)!=PERM_WRITEABLE){
+	sched_kill_env(curenv->env_id);
+}
+if((uint32)fault_va>=KERNEL_HEAP_START&&(uint32)fault_va<KERNEL_HEAP_MAX){
+	sched_kill_env(curenv->env_id);
+}
+if((uint32)fault_va>=USER_HEAP_START && (uint32)fault_va<USER_HEAP_MAX){
+	if(((uint32)fault_va& PERM_PRESENT)!=PERM_PRESENT)
+	{
+			sched_kill_env(curenv->env_id);
+	}
+}
+
 			/*============================================================================================*/
 			//TODO: [PROJECT'23.MS2 - #13] [3] PAGE FAULT HANDLER - Check for invalid pointers
 			//(e.g. pointing to unmarked user heap page, kernel or wrong access rights),
 			//your code is here
 
-			/*============================================================================================*/
+		/*============================================================================================*/
 		}
 
 		/*2022: Check if fault due to Access Rights */

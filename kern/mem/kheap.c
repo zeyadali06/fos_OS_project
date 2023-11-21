@@ -250,14 +250,24 @@ unsigned int kheap_virtual_address(unsigned int physical_address)
 }
 
 unsigned int kheap_physical_address(unsigned int virtual_address)
-{
+{ 
+		struct FrameInfo *ptr = NULL; 
+uint32 *ptr_page_table =NULL;
+// get_page_table((uint32*)ptr_page_directory,virtual_address,&ptr_page_table); 
+if(get_page_table((uint32*)ptr_page_directory,virtual_address,&ptr_page_table)==TABLE_NOT_EXIST ){
+return 0;
+}
+ uint32 offset=((uint32)virtual_address& 0x00000fff);
+// return ptr_page_table[PTX(virtual_address)]+offset;
+ ptr = get_frame_info(ptr_page_directory,(uint32)virtual_address,&ptr_page_table);
+return (unsigned int ) (to_physical_address(ptr)+offset);
+
 	// TODO: [PROJECT'23.MS2 - #06] [1] KERNEL HEAP - kheap_physical_address()
 	// refer to the project presentation and documentation for details
 	//  Write your code here, remove the panic and write your code
-	panic("kheap_physical_address() is not implemented yet...!!");
-
+	//panic("kheap_physical_address() is not implemented yet...!!");
 	// change this "return" according to your answer
-	return 0;
+	//return 0;
 }
 
 void kfreeall()
