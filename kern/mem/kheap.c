@@ -20,9 +20,9 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	startOfKernalHeap = (uint32 *)daStart;
 	brk = (uint32 *)(daStart + initSizeToAllocate);
 	rlimit = (uint32 *)daLimit;
+	// rlimit = 0xF8000000
 
 	uint32 virtual_address = daStart;
-
 	for (int i = 0; i < ROUNDUP(initSizeToAllocate, PAGE_SIZE) / PAGE_SIZE; i++)
 	{
 		struct FrameInfo *ptr;
@@ -124,6 +124,8 @@ void *kmalloc(unsigned int size)
 	// 	}
 	// cprintf("----------------------------------------------------------------\n");
 	// cprintf("size: %d %d %d\n", size, ROUNDUP(size, PAGE_SIZE), ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
+	// cprintf("size: %x\n", size);
+
 	if (size >= (KERNEL_HEAP_MAX - ((uint32)rlimit + 4096)) || size >= ((uint32)rlimit - KERNEL_HEAP_START))
 	{
 		// cprintf("----------------------------------------------------------------\n");
@@ -154,7 +156,6 @@ void *kmalloc(unsigned int size)
 				uint32 returnedVA = va;
 				for (int l = 0; l < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; l++)
 				{
-
 					if ((uint32)(ptrPage[PTX(checkableVA)]) != 0)
 					{
 						enoughFreeSpace = 0;
@@ -166,11 +167,7 @@ void *kmalloc(unsigned int size)
 					{
 						checkableVA += 0x1000;
 						// cprintf("Already Bigger Than 1023\n");
-						if (get_page_table(ptr_page_directory, (uint32)checkableVA, &ptrPage) == TABLE_IN_MEMORY)
-						{
-							// cprintf("Another Table is Avaliable\n");
-						}
-						else
+						if (get_page_table(ptr_page_directory, (uint32)checkableVA, &ptrPage) == TABLE_NOT_EXIST)
 						{
 							return NULL;
 						}
@@ -189,6 +186,7 @@ void *kmalloc(unsigned int size)
 					struct FrameInfo *ptr_frame_info;
 					if (allocate_frame(&ptr_frame_info) == 0)
 					{
+						addresses[(((PDX(va) - PDX(rlimit + PAGE_SIZE)) * 1024) + PTX(va))] = (uint32 *)returnedVA;
 						map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
 					}
 					else
@@ -196,8 +194,10 @@ void *kmalloc(unsigned int size)
 						// cprintf("----------------------------------------------------------------\n");
 						return NULL;
 					}
+
 					va += 0x1000;
 				}
+
 				// cprintf("Free Entry Loaded Succesfully %d %x %x\n", i, returnedVA, va);
 				// cprintf("----------------------------------------------------------------\n");
 				return (void *)returnedVA;
@@ -233,7 +233,47 @@ void kfree(void *virtual_address)
 	// TODO: [PROJECT'23.MS2 - #04] [1] KERNEL HEAP - kfree()
 	// refer to the project presentation and documentation for details
 	//  Write your code here, remove the panic and write your code
-	panic("kfree() is not implemented yet...!!");
+
+	
+	if ((uint32)virtual_address >= KERNEL_HEAP_START && (uint32)virtual_address <= (uint32)brk)
+	{
+		free_block(virtual_address);
+		return;
+	}
+
+	if ((uint32)virtual_address < (uint32)rlimit + 4096 || (uint32)virtual_address > KERNEL_HEAP_MAX)
+	{
+		panic("Invalid Address");
+		// return;
+	}
+
+	// cprintf("Enter\n");
+
+	int numOfPages = 0;
+	for (int i = 0; i < NUM_OF_KHEAP_PAGES + 1; i++)
+	{
+		if (((addresses[i] == addresses[i + 1]) || (addresses[i] == addresses[i - 1])) && addresses[i] == (uint32 *)virtual_address)
+		// if (((addresses[i] == addresses[i + 1]) ) && addresses[i] == (uint32 *)virtual_address)
+			numOfPages++;
+	}
+
+	// cprintf("%d\n", free_frame_list.size);
+	for (int i = 0; i < numOfPages; i++)
+	{
+		// cprintf("%d\n", free_frame_list.size);
+		// struct FrameInfo *fptr;
+		uint32 *ptrPageTable;
+		// fptr = get_frame_info(ptr_page_directory, (uint32)virtual_address, &ptrPageTable);
+		unmap_frame(ptr_page_directory, (uint32)virtual_address);
+		virtual_address += 0x1000;
+	}
+	// cprintf("%d\n", free_frame_list.size);
+	// cprintf("%d\n", numOfPages);
+	// cprintf("Quit\n");
+
+	// panic("Invalid Address");
+
+	// panic("kfree() is not implemented yet...!!");
 }
 
 unsigned int kheap_virtual_address(unsigned int physical_address)
