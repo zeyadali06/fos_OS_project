@@ -122,32 +122,31 @@ void *kmalloc(unsigned int size)
 	// 	{
 	// (uint32)ptr_page_directory
 	// 	}
-	cprintf("----------------------------------------------------------------\n");
-	cprintf("size: %d %d %d\n", size, ROUNDUP(size, PAGE_SIZE), ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
+	// cprintf("----------------------------------------------------------------\n");
+	// cprintf("size: %d %d %d\n", size, ROUNDUP(size, PAGE_SIZE), ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
 	if (size >= (KERNEL_HEAP_MAX - ((uint32)rlimit + 4096)) || size >= ((uint32)rlimit - KERNEL_HEAP_START))
 	{
-		cprintf("----------------------------------------------------------------\n");
+		// cprintf("----------------------------------------------------------------\n");
 		return NULL;
 	}
 
 	if (size <= DYN_ALLOC_MAX_BLOCK_SIZE)
 	{
-		cprintf("----------------------------------------------------------------\n");
+		// cprintf("----------------------------------------------------------------\n");
 		return alloc_block(size, DA_FF);
 	}
 
 	uint32 va = (uint32)rlimit + PAGE_SIZE;
-	cprintf("va: %x\n", va);
+	// cprintf("va: %x\n", va);
 	for (int i = 0; i < (1024 * 1024); i++)
 	{
 		uint32 *ptrPage;
 		if (get_page_table(ptr_page_directory, (uint32)va, &ptrPage) == TABLE_IN_MEMORY)
 		{
 			// cprintf("Page table exist %d\n", i);
-			// cprintf("%x %x %x\n", ptrPage, PTX(va), *((uint32 *)((uint32)ptrPage + PTX(va))));
-			// cprintf("page entry: %x\n", *((uint32 *)((uint32)ptrPage + PTX(va))));
+			// cprintf("%x %x %x\n", ptrPage, PTX(va), (uint32)(ptrPage[PTX(va)]));
+			// cprintf("page entry: %x\n", (uint32)(ptrPage[PTX(va)]));
 
-			// if (*((uint32 *)((uint32)ptrPage + PTX(va))) == 0)
 			if ((uint32)(ptrPage[PTX(va)]) == 0)
 			{
 				bool enoughFreeSpace = 1;
@@ -155,13 +154,27 @@ void *kmalloc(unsigned int size)
 				uint32 returnedVA = va;
 				for (int l = 0; l < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; l++)
 				{
-					// if (*((uint32 *)((uint32)ptrPage + PTX(checkableVA))) != 0)
+
 					if ((uint32)(ptrPage[PTX(checkableVA)]) != 0)
 					{
 						enoughFreeSpace = 0;
+						// cprintf("Exit\n");
 						break;
 					}
-					checkableVA += 0x1000;
+
+					if (PTX(checkableVA) == 1023)
+					{
+						checkableVA += 0x1000;
+						// cprintf("Already Bigger Than 1023\n");
+						if (get_page_table(ptr_page_directory, (uint32)checkableVA, &ptrPage) == TABLE_IN_MEMORY)
+						{
+							// cprintf("Another Table is Avaliable\n");
+						}
+						else
+						{
+							return NULL;
+						}
+					}
 				}
 
 				if (enoughFreeSpace == 0)
@@ -180,13 +193,13 @@ void *kmalloc(unsigned int size)
 					}
 					else
 					{
-						cprintf("----------------------------------------------------------------\n");
+						// cprintf("----------------------------------------------------------------\n");
 						return NULL;
 					}
 					va += 0x1000;
 				}
-				cprintf("Free Entry Loaded Succesfully %d %x %x\n", i, returnedVA, va);
-				cprintf("----------------------------------------------------------------\n");
+				// cprintf("Free Entry Loaded Succesfully %d %x %x\n", i, returnedVA, va);
+				// cprintf("----------------------------------------------------------------\n");
 				return (void *)returnedVA;
 			}
 			else
@@ -196,13 +209,13 @@ void *kmalloc(unsigned int size)
 		}
 		else
 		{
-			cprintf("Page Table Not Exist %d\n", i);
+			// cprintf("Page Table Not Exist %d\n", i);
 			va += 0x1000;
 		}
 
 		if (va > KERNEL_HEAP_MAX)
 		{
-			cprintf("End Of Kernal Heap\n");
+			// cprintf("End Of Kernal Heap\n");
 			break;
 		}
 		// cprintf("%x %d\n", ptrPage, i);
@@ -210,7 +223,7 @@ void *kmalloc(unsigned int size)
 
 	// change this "return" according to your answer
 	// kpanic_into_prompt("kmalloc() is not implemented yet...!!");
-	cprintf("----------------------------------------------------------------\n");
+	// cprintf("----------------------------------------------------------------\n");
 
 	return NULL;
 }
