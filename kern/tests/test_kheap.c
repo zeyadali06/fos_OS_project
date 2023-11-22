@@ -2096,7 +2096,7 @@ int test_kheap_phys_addr()
 		if ((uint32)ptr_allocations[0] != (ACTUAL_START))
 		{
 			correct = 0;
-			cprintf("Wrong start address for the allocated space... check return address of kmalloc\n");
+			cprintf("Wrong start address for the allocated space... check return address of kmalloc %x %x\n", (uint32)ptr_allocations[0], ACTUAL_START);
 		}
 		if ((pf_calculate_free_frames() - freeDiskFrames) != 0)
 		{
@@ -2293,7 +2293,7 @@ int test_kheap_phys_addr()
 					if (correct)
 					{
 						correct = 0;
-						cprintf("Wrong kheap_physical_address\n");
+						cprintf("Wrong kheap_physical_address\n %x %x", ((ptr_table[j] & 0xFFFFF000) + (va & 0x00000FFF)), allPAs[i]);
 					}
 				}
 				va += PAGE_SIZE + offset;
@@ -2326,7 +2326,7 @@ int test_kheap_phys_addr()
 				if (correct)
 				{
 					correct = 0;
-					cprintf("Wrong kheap_physical_address\n");
+					cprintf("Wrong kheap_physical_address %x %x\n", ((ptr_table[PTX(va)] & 0xFFFFF000) + (va & 0x00000FFF)), pa);
 				}
 			}
 		}
@@ -2417,7 +2417,7 @@ int test_kheap_phys_addr()
 					if (correct)
 					{
 						correct = 0;
-						cprintf("Wrong kheap_physical_address\n");
+						cprintf("Wrong kheap_physical_address %x %x\n", ((ptr_table[j] & 0xFFFFF000) + ((ptr_table[j] & PERM_PRESENT) == 0 ? 0 : va & 0x00000FFF)), allPAs[i]);
 					}
 				}
 				va += PAGE_SIZE;
@@ -2449,7 +2449,7 @@ int test_kheap_phys_addr()
 				if (correct)
 				{
 					correct = 0;
-					cprintf("Wrong kheap_physical_address\n");
+					cprintf("Wrong kheap_physical_address must:%x   ret:%x   parameter:%x\n", ((ptr_table[PTX(va)] & 0xFFFFF000) + (va & 0x00000FFF)), pa, va);
 				}
 			}
 		}

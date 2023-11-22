@@ -13,13 +13,23 @@
 ///============================================================================================
 /// Dealing with environment working set
 #if USE_KHEAP
-inline struct WorkingSetElement* env_page_ws_list_create_element(struct Env* e, uint32 virtual_address)
+
+inline struct WorkingSetElement *env_page_ws_list_create_element(struct Env *e, uint32 virtual_address)
 {
-	//TODO: [PROJECT'23.MS2 - #14] [3] PAGE FAULT HANDLER - Create a new working set element
-	// Write your code here, remove the panic and write your code
-	panic("env_page_ws_list_create_element() is not implemented yet...!!");
-	return NULL;
+	// TODO: [PROJECT'23.MS2 - #14] [3] PAGE FAULT HANDLER - Create a new working set element
+	//  Write your code here, remove the panic and write your code
+	// panic("env_page_ws_list_create_element() is not implemented yet...!!");
+	// return NULL;
+	struct WorkingSetElement *newelement = (struct WorkingSetElement *)kmalloc(sizeof(newelement));
+	if (newelement != NULL)
+	{
+		newelement->virtual_address = virtual_address;
+		return newelement;
+	}
+	else
+		panic("failur");
 }
+
 inline void env_page_ws_invalidate(struct Env* e, uint32 virtual_address)
 {
 	if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))

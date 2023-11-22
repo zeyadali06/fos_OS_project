@@ -29,6 +29,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 		if (allocate_frame(&ptr) == 0)
 		{
 			map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE);
+			ptr->va = (uint32)virtual_address;
 		}
 		else
 		{
@@ -76,8 +77,11 @@ void *sbrk(int increment)
 			{
 				// cprintf("ok\n");
 				struct FrameInfo *ptr;
-				allocate_frame(&ptr);
-				map_frame(ptr_page_directory, ptr, (uint32)brk, PERM_WRITEABLE);
+				if (allocate_frame(&ptr) == 0)
+				{
+					map_frame(ptr_page_directory, ptr, (uint32)brk, PERM_WRITEABLE);
+					ptr->va = (uint32)brk;
+				}
 				// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE));
 				brk += PAGE_SIZE;
 			}
@@ -97,9 +101,10 @@ void *sbrk(int increment)
 		{
 			struct FrameInfo *ptr;
 			uint32 *ptrPageTable;
-			unmap_frame(ptr_page_directory, (uint32)brk);
 			ptr = get_frame_info(ptr_page_directory, (uint32)brk, &ptrPageTable);
-			free_frame(ptr);
+			ptr->va = 0;
+			// free_frame(ptr);
+			unmap_frame(ptr_page_directory, (uint32)brk);
 
 			brk -= PAGE_SIZE;
 		}
@@ -124,7 +129,7 @@ void *kmalloc(unsigned int size)
 	// 	}
 	// cprintf("----------------------------------------------------------------\n");
 	// cprintf("size: %d %d %d\n", size, ROUNDUP(size, PAGE_SIZE), ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
-
+	// cprintf("Enter kmalloc\n");
 	if (size >= (KERNEL_HEAP_MAX - ((uint32)rlimit + 4096)) || size >= ((uint32)rlimit - KERNEL_HEAP_START))
 	{
 		// cprintf("----------------------------------------------------------------\n");
@@ -137,7 +142,7 @@ void *kmalloc(unsigned int size)
 		return alloc_block(size, DA_FF);
 	}
 
-	cprintf("malloc   size: %d  ", ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
+	// cprintf("malloc   size: %d  ", ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
 
 	uint32 va = (uint32)rlimit + PAGE_SIZE;
 	// cprintf("va: %x\n", va);
@@ -170,7 +175,10 @@ void *kmalloc(unsigned int size)
 					{
 						checkableVA += PAGE_SIZE;
 						if (get_page_table(ptr_page_directory, (uint32)checkableVA, &ptrPage) == TABLE_NOT_EXIST)
+						{
+							// cprintf("----------------------------------------------------------------\n");
 							return NULL;
+						}
 					}
 
 					checkableVA += PAGE_SIZE;
@@ -189,6 +197,7 @@ void *kmalloc(unsigned int size)
 					if (allocate_frame(&ptr_frame_info) == 0)
 					{
 						map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
+						ptr_frame_info->va = va;
 					}
 					else
 					{
@@ -196,7 +205,7 @@ void *kmalloc(unsigned int size)
 						return NULL;
 					}
 
-					va += 0x1000;
+					va += PAGE_SIZE;
 				}
 
 				for (int i = 0; i < NUM_OF_KHEAP_PAGES; i++)
@@ -209,7 +218,7 @@ void *kmalloc(unsigned int size)
 					}
 				}
 
-				cprintf("VA: %x\n", returnedVA);
+				// cprintf("VA: %x\n", returnedVA);
 
 				// cprintf("Free Entry Loaded Succesfully %d %x %x\n", i, returnedVA, va);
 				// cprintf("----------------------------------------------------------------\n");
@@ -228,7 +237,10 @@ void *kmalloc(unsigned int size)
 		}
 
 		if (va > KERNEL_HEAP_MAX)
+		{
+			// cprintf("----------------------------------------------------------------\n");
 			return NULL;
+		}
 	}
 
 	// change this "return" according to your answer
@@ -243,10 +255,11 @@ void kfree(void *virtual_address)
 	// TODO: [PROJECT'23.MS2 - #04] [1] KERNEL HEAP - kfree()
 	// refer to the project presentation and documentation for details
 	//  Write your code here, remove the panic and write your code
-
+	// cprintf("Enter kfree\n");
 	if ((uint32)virtual_address >= KERNEL_HEAP_START && (uint32)virtual_address <= (uint32)brk)
 	{
 		free_block(virtual_address);
+		// cprintf("----------------------------------------------------------------\n");
 		return;
 	}
 
@@ -264,7 +277,7 @@ void kfree(void *virtual_address)
 		// cprintf("%x %x\n", virtual_address, addresses[i].va);
 		if (addresses[i].va == virtual_address)
 		{
-			cprintf("free   NOPages coresponding to VA: %d  VA: %x\n", (ROUNDUP(addresses[i].size, PAGE_SIZE) / PAGE_SIZE), addresses[i].va);
+			// cprintf("free   NOPages coresponding to VA: %d  VA: %x\n", (ROUNDUP(addresses[i].size, PAGE_SIZE) / PAGE_SIZE), addresses[i].va);
 			// va = addresses[i].va;
 			size = addresses[i].size;
 			addresses[i].size = 0;
@@ -279,14 +292,17 @@ void kfree(void *virtual_address)
 	for (int i = 0; i < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE); i++)
 	{
 		// cprintf("%d\n", free_frame_list.size);
-		// struct FrameInfo *fptr;
-		// uint32 *ptrPageTable;
-		// fptr = get_frame_info(ptr_page_directory, (uint32)virtual_address, &ptrPageTable);
+		struct FrameInfo *fptr;
+		uint32 *ptrPageTable;
+		fptr = get_frame_info(ptr_page_directory, (uint32)virtual_address, &ptrPageTable);
+		fptr->va = 0;
 		// free_frame(fptr);
 		unmap_frame(ptr_page_directory, (uint32)virtual_address);
 		virtual_address += PAGE_SIZE;
 		// cprintf("Finish UnMapping\n");
 	}
+
+	// cprintf("----------------------------------------------------------------\n");
 
 	// cprintf("Quit\n");
 
@@ -298,23 +314,57 @@ unsigned int kheap_virtual_address(unsigned int physical_address)
 	// TODO: [PROJECT'23.MS2 - #05] [1] KERNEL HEAP - kheap_virtual_address()
 	// refer to the project presentation and documentation for details
 	//  Write your code here, remove the panic and write your code
-	panic("kheap_virtual_address() is not implemented yet...!!");
+	// panic("kheap_virtual_address() is not implemented yet...!!");
 
 	// EFFICIENT IMPLEMENTATION ~O(1) IS REQUIRED ==================
 
+	struct FrameInfo *ptr_frame_info;
+	ptr_frame_info = to_frame_info((uint32)physical_address);
+	// if (ptr_frame_info->references == 0)
+	// {
+	// 	cprintf("references\n");
+	// 	return 0;
+	// }
+	// cprintf("enter\n");
+	uint32 *ptrPage;
+
+	// cprintf("%x %x\n", get_page_table(ptr_page_directory, ptr_frame_info->va, &ptrPage), ptrPage);
+	if (get_page_table(ptr_page_directory, ptr_frame_info->va, &ptrPage) == TABLE_IN_MEMORY)
+	{
+		if (ptrPage[PTX(ptr_frame_info->va)] == 0)
+		{
+			return 0;
+		}
+	}
+	// cprintf("quit\n");
+
+	uint32 va = ptr_frame_info->va;
+	// uint32 offset = ((uint32)physical_address / PAGE_SIZE) & 0xFFF;
+	uint32 offset = physical_address - ROUNDDOWN(physical_address, PAGE_SIZE);
+	return va + offset;
+
 	// change this "return" according to your answer
-	return 0;
+	// return 0;
 }
 
 unsigned int kheap_physical_address(unsigned int virtual_address)
 {
+
+	uint32 *ptr_page_table = NULL;
+	get_page_table(ptr_page_directory, virtual_address, &ptr_page_table);
+	if (ptr_page_table == NULL)
+		return 0;
+
+	uint32 offset = ((uint32)virtual_address & 0xfff);
+
+	return (unsigned int)((ptr_page_table[PTX(virtual_address)] & 0xFFFFF000) | offset);
+
 	// TODO: [PROJECT'23.MS2 - #06] [1] KERNEL HEAP - kheap_physical_address()
 	// refer to the project presentation and documentation for details
 	//  Write your code here, remove the panic and write your code
-	panic("kheap_physical_address() is not implemented yet...!!");
-
+	// panic("kheap_physical_address() is not implemented yet...!!");
 	// change this "return" according to your answer
-	return 0;
+	// return 0;
 }
 
 void kfreeall()
