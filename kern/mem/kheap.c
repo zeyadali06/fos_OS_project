@@ -293,12 +293,12 @@ unsigned int kheap_physical_address(unsigned int virtual_address)
 { 
 		struct FrameInfo *ptr = NULL; 
 uint32 *ptr_page_table =NULL;
-// get_page_table((uint32*)ptr_page_directory,virtual_address,&ptr_page_table); 
+//get_page_table((uint32*)ptr_page_directory,virtual_address,&ptr_page_table); 
 if(get_page_table((uint32*)ptr_page_directory,virtual_address,&ptr_page_table)==TABLE_NOT_EXIST ){
 return 0;
 }
  uint32 offset=((uint32)virtual_address& 0x00000fff);
-// return ptr_page_table[PTX(virtual_address)]+offset;
+ //return ptr_page_table[PTX(virtual_address)]+offset;
  ptr = get_frame_info(ptr_page_directory,(uint32)virtual_address,&ptr_page_table);
 return (unsigned int ) (to_physical_address(ptr)+offset);
 

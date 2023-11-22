@@ -373,18 +373,25 @@ void fault_handler(struct Trapframe *tf)
 	else
 	{
 		if (userTrap)
-		{
+		{ 
 
-if(((uint32)fault_va& PERM_WRITEABLE)!=PERM_WRITEABLE){
-	sched_kill_env(curenv->env_id);
+if(((uint32)pt_get_page_permissions(ptr_page_directory,fault_va)& PERM_WRITEABLE)!=PERM_WRITEABLE){
+ 	sched_kill_env(faulted_env->env_id);
+ }
+// if(((uint32)fault_va& PERM_WRITEABLE)!=PERM_WRITEABLE){
+// 	sched_kill_env(curenv->env_id);
+// }
+if((uint32)fault_va>=KERNEL_HEAP_START&&(uint32)fault_va<=KERNEL_HEAP_MAX){
+	sched_kill_env(faulted_env->env_id);
 }
-if((uint32)fault_va>=KERNEL_HEAP_START&&(uint32)fault_va<KERNEL_HEAP_MAX){
-	sched_kill_env(curenv->env_id);
-}
-if((uint32)fault_va>=USER_HEAP_START && (uint32)fault_va<USER_HEAP_MAX){
-	if(((uint32)fault_va& PERM_PRESENT)!=PERM_PRESENT)
+if((uint32)fault_va>=USER_HEAP_START && (uint32)fault_va<=USER_HEAP_MAX){
+	// if(((uint32)fault_va& PERM_PRESENT)!=PERM_PRESENT)
+	// {
+	// 		sched_kill_env(curenv->env_id);
+	// }
+	if(((uint32)pt_get_page_permissions(ptr_page_directory,fault_va)& PERM_PRESENT)!=PERM_PRESENT)
 	{
-			sched_kill_env(curenv->env_id);
+		sched_kill_env(faulted_env->env_id);
 	}
 }
 
