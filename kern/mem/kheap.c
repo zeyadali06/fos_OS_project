@@ -124,7 +124,7 @@ void *kmalloc(unsigned int size)
 	// 	}
 	// cprintf("----------------------------------------------------------------\n");
 	// cprintf("size: %d %d %d\n", size, ROUNDUP(size, PAGE_SIZE), ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
-	// cprintf("size: %x\n", size);
+	cprintf("malloc   size: %d  ", ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
 
 	if (size >= (KERNEL_HEAP_MAX - ((uint32)rlimit + 4096)) || size >= ((uint32)rlimit - KERNEL_HEAP_START))
 	{
@@ -140,7 +140,7 @@ void *kmalloc(unsigned int size)
 
 	uint32 va = (uint32)rlimit + PAGE_SIZE;
 	// cprintf("va: %x\n", va);
-	for (int i = 0; i < (1024 * 1024); i++)
+	for (int i = 0; i < NUM_OF_KHEAP_PAGES; i++)
 	{
 		uint32 *ptrPage;
 		if (get_page_table(ptr_page_directory, (uint32)va, &ptrPage) == TABLE_IN_MEMORY)
@@ -166,11 +166,8 @@ void *kmalloc(unsigned int size)
 					if (PTX(checkableVA) == 1023)
 					{
 						checkableVA += 0x1000;
-						// cprintf("Already Bigger Than 1023\n");
 						if (get_page_table(ptr_page_directory, (uint32)checkableVA, &ptrPage) == TABLE_NOT_EXIST)
-						{
 							return NULL;
-						}
 					}
 				}
 
@@ -186,7 +183,6 @@ void *kmalloc(unsigned int size)
 					struct FrameInfo *ptr_frame_info;
 					if (allocate_frame(&ptr_frame_info) == 0)
 					{
-						addresses[(((PDX(va) - PDX(rlimit + PAGE_SIZE)) * 1024) + PTX(va))] = (uint32 *)returnedVA;
 						map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
 					}
 					else
@@ -197,6 +193,18 @@ void *kmalloc(unsigned int size)
 
 					va += 0x1000;
 				}
+
+				for (int i = 0; i < NUM_OF_KHEAP_PAGES; i++)
+				{
+					if (addresses[i].va == 0 && addresses[i].size == 0)
+					{
+						addresses[i].va = (void *)returnedVA;
+						addresses[i].size = size;
+						break;
+					}
+				}
+
+				cprintf("VA: %x\n", returnedVA);
 
 				// cprintf("Free Entry Loaded Succesfully %d %x %x\n", i, returnedVA, va);
 				// cprintf("----------------------------------------------------------------\n");
@@ -214,11 +222,7 @@ void *kmalloc(unsigned int size)
 		}
 
 		if (va > KERNEL_HEAP_MAX)
-		{
-			// cprintf("End Of Kernal Heap\n");
-			break;
-		}
-		// cprintf("%x %d\n", ptrPage, i);
+			return NULL;
 	}
 
 	// change this "return" according to your answer
@@ -234,7 +238,6 @@ void kfree(void *virtual_address)
 	// refer to the project presentation and documentation for details
 	//  Write your code here, remove the panic and write your code
 
-	
 	if ((uint32)virtual_address >= KERNEL_HEAP_START && (uint32)virtual_address <= (uint32)brk)
 	{
 		free_block(virtual_address);
@@ -247,31 +250,39 @@ void kfree(void *virtual_address)
 		// return;
 	}
 
-	// cprintf("Enter\n");
+	cprintf("Enter\n");
 
-	int numOfPages = 0;
-	for (int i = 0; i < NUM_OF_KHEAP_PAGES + 1; i++)
+	uint32 size;
+	for (int i = 0; i < NUM_OF_KHEAP_PAGES; i++)
 	{
-		if (((addresses[i] == addresses[i + 1]) || (addresses[i] == addresses[i - 1])) && addresses[i] == (uint32 *)virtual_address)
-		// if (((addresses[i] == addresses[i + 1]) ) && addresses[i] == (uint32 *)virtual_address)
-			numOfPages++;
+		// cprintf("%x %x\n", virtual_address, addresses[i].va);
+		if (addresses[i].va == virtual_address)
+		{
+			cprintf("free   NOPages coresponding to VA: %d  VA: %x\n", (ROUNDUP(addresses[i].size, PAGE_SIZE) / PAGE_SIZE), addresses[i].va);
+			// va = addresses[i].va;
+			size = addresses[i].size;
+			addresses[i].size = 0;
+			addresses[i].va = 0;
+			break;
+		}
+		// if (((addresses[i] == addresses[i + 1]) || (addresses[i] == addresses[i - 1])) && addresses[i] == (uint32 *)virtual_address)
+		// 	// if (((addresses[i] == addresses[i + 1]) ) && addresses[i] == (uint32 *)virtual_address)
+		// 	numOfPages++;
 	}
 
-	// cprintf("%d\n", free_frame_list.size);
-	for (int i = 0; i < numOfPages; i++)
+	for (int i = 0; i < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE); i++)
 	{
 		// cprintf("%d\n", free_frame_list.size);
 		// struct FrameInfo *fptr;
-		uint32 *ptrPageTable;
+		// uint32 *ptrPageTable;
 		// fptr = get_frame_info(ptr_page_directory, (uint32)virtual_address, &ptrPageTable);
 		unmap_frame(ptr_page_directory, (uint32)virtual_address);
+		// free_frame(fptr);
 		virtual_address += 0x1000;
+		// cprintf("Finish UnMapping\n");
 	}
-	// cprintf("%d\n", free_frame_list.size);
-	// cprintf("%d\n", numOfPages);
-	// cprintf("Quit\n");
 
-	// panic("Invalid Address");
+	cprintf("Quit\n");
 
 	// panic("kfree() is not implemented yet...!!");
 }

@@ -334,7 +334,7 @@ void run_command_prompt()
 		// test_kfree();
 		// test_kfree_bestfirstfit();
 		// test_kmalloc();
-		// test_kmalloc_firstfit1();
+		test_kmalloc_firstfit1();
 		// test_kmalloc_firstfit2();
 		// parse and execute the command
 		if (command_line != NULL)
