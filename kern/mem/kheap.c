@@ -29,7 +29,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 		if (allocate_frame(&ptr) == 0)
 		{
 			map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE);
-			ptr->va = (uint32)virtual_address;
+			ptr->va = (uint32)virtual_address & 0xFFFFF000;
 		}
 		else
 		{
@@ -80,7 +80,7 @@ void *sbrk(int increment)
 				if (allocate_frame(&ptr) == 0)
 				{
 					map_frame(ptr_page_directory, ptr, (uint32)brk, PERM_WRITEABLE);
-					ptr->va = (uint32)brk;
+					ptr->va = (uint32)brk & 0xFFFFF000;
 				}
 				// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE));
 				brk += PAGE_SIZE;
@@ -99,10 +99,10 @@ void *sbrk(int increment)
 		increment *= -1;
 		for (int i = 0; i < ROUNDDOWN(increment, PAGE_SIZE) / PAGE_SIZE; i++)
 		{
-			struct FrameInfo *ptr;
-			uint32 *ptrPageTable;
-			ptr = get_frame_info(ptr_page_directory, (uint32)brk, &ptrPageTable);
-			ptr->va = 0;
+			// struct FrameInfo *ptr;
+			// uint32 *ptrPageTable;
+			// ptr = get_frame_info(ptr_page_directory, (uint32)brk, &ptrPageTable);
+			// ptr->va = 0;
 			// free_frame(ptr);
 			unmap_frame(ptr_page_directory, (uint32)brk);
 
@@ -176,7 +176,6 @@ void *kmalloc(unsigned int size)
 						checkableVA += PAGE_SIZE;
 						if (get_page_table(ptr_page_directory, (uint32)checkableVA, &ptrPage) == TABLE_NOT_EXIST)
 						{
-							// cprintf("----------------------------------------------------------------\n");
 							return NULL;
 						}
 					}
@@ -197,13 +196,10 @@ void *kmalloc(unsigned int size)
 					if (allocate_frame(&ptr_frame_info) == 0)
 					{
 						map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
-						ptr_frame_info->va = va;
+						ptr_frame_info->va = va & 0xFFFFF000;
 					}
 					else
-					{
-						// cprintf("----------------------------------------------------------------\n");
 						return NULL;
-					}
 
 					va += PAGE_SIZE;
 				}
@@ -225,22 +221,15 @@ void *kmalloc(unsigned int size)
 				return (void *)returnedVA;
 			}
 			else
-			{
-				// cprintf("----------------------------------------------------------------\n");
 				va += PAGE_SIZE;
-			}
 		}
 		else
 		{
-			// cprintf("Page Table Not Exist %d\n", i);
 			va += PAGE_SIZE;
 		}
 
 		if (va > KERNEL_HEAP_MAX)
-		{
-			// cprintf("----------------------------------------------------------------\n");
 			return NULL;
-		}
 	}
 
 	// change this "return" according to your answer
@@ -292,10 +281,10 @@ void kfree(void *virtual_address)
 	for (int i = 0; i < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE); i++)
 	{
 		// cprintf("%d\n", free_frame_list.size);
-		struct FrameInfo *fptr;
-		uint32 *ptrPageTable;
-		fptr = get_frame_info(ptr_page_directory, (uint32)virtual_address, &ptrPageTable);
-		fptr->va = 0;
+		// struct FrameInfo *fptr;
+		// uint32 *ptrPageTable;
+		// fptr = get_frame_info(ptr_page_directory, (uint32)virtual_address, &ptrPageTable);
+		// fptr->va = 0;
 		// free_frame(fptr);
 		unmap_frame(ptr_page_directory, (uint32)virtual_address);
 		virtual_address += PAGE_SIZE;
@@ -320,27 +309,17 @@ unsigned int kheap_virtual_address(unsigned int physical_address)
 
 	struct FrameInfo *ptr_frame_info;
 	ptr_frame_info = to_frame_info((uint32)physical_address);
-	// if (ptr_frame_info->references == 0)
-	// {
-	// 	cprintf("references\n");
-	// 	return 0;
-	// }
-	// cprintf("enter\n");
-	uint32 *ptrPage;
-
-	// cprintf("%x %x\n", get_page_table(ptr_page_directory, ptr_frame_info->va, &ptrPage), ptrPage);
-	if (get_page_table(ptr_page_directory, ptr_frame_info->va, &ptrPage) == TABLE_IN_MEMORY)
+	if (ptr_frame_info->references == 0)
 	{
-		if (ptrPage[PTX(ptr_frame_info->va)] == 0)
-		{
-			return 0;
-		}
+		return 0;
 	}
-	// cprintf("quit\n");
+	// cprintf("enter\n");
 
 	uint32 va = ptr_frame_info->va;
 	// uint32 offset = ((uint32)physical_address / PAGE_SIZE) & 0xFFF;
 	uint32 offset = physical_address - ROUNDDOWN(physical_address, PAGE_SIZE);
+	// cprintf("physical_address:%x   returned:%x\n", physical_address, va + offset);
+
 	return va + offset;
 
 	// change this "return" according to your answer

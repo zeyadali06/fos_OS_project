@@ -2888,6 +2888,8 @@ int test_kheap_virt_addr()
 			}
 			pa = (ptr_table[PTX(va)] & 0xFFFFF000) + (va & 0xFFF);
 			uint32 retrievedVA = kheap_virtual_address(pa);
+			// cprintf("PA = %x, retrievedVA = %x expectedVA = %x\n", pa, retrievedVA, va);
+
 			if (retrievedVA != va)
 			{
 				if (correct)
