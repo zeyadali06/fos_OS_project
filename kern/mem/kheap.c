@@ -124,7 +124,6 @@ void *kmalloc(unsigned int size)
 	// 	}
 	// cprintf("----------------------------------------------------------------\n");
 	// cprintf("size: %d %d %d\n", size, ROUNDUP(size, PAGE_SIZE), ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
-	cprintf("malloc   size: %d  ", ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
 
 	if (size >= (KERNEL_HEAP_MAX - ((uint32)rlimit + 4096)) || size >= ((uint32)rlimit - KERNEL_HEAP_START))
 	{
@@ -137,6 +136,8 @@ void *kmalloc(unsigned int size)
 		// cprintf("----------------------------------------------------------------\n");
 		return alloc_block(size, DA_FF);
 	}
+
+	cprintf("malloc   size: %d  ", ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
 
 	uint32 va = (uint32)rlimit + PAGE_SIZE;
 	// cprintf("va: %x\n", va);
@@ -154,10 +155,12 @@ void *kmalloc(unsigned int size)
 				bool enoughFreeSpace = 1;
 				uint32 checkableVA = va;
 				uint32 returnedVA = va;
-				for (int l = 0; l < ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE; l++)
+				for (int l = 0; l < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE) - 1; l++)
 				{
+					// cprintf("%x\n", (uint32)(ptrPage[PTX(checkableVA)]));
 					if ((uint32)(ptrPage[PTX(checkableVA)]) != 0)
 					{
+						// checkableVA += PAGE_SIZE;
 						enoughFreeSpace = 0;
 						// cprintf("Exit\n");
 						break;
@@ -165,15 +168,17 @@ void *kmalloc(unsigned int size)
 
 					if (PTX(checkableVA) == 1023)
 					{
-						checkableVA += 0x1000;
+						checkableVA += PAGE_SIZE;
 						if (get_page_table(ptr_page_directory, (uint32)checkableVA, &ptrPage) == TABLE_NOT_EXIST)
 							return NULL;
 					}
+
+					checkableVA += PAGE_SIZE;
 				}
 
 				if (enoughFreeSpace == 0)
 				{
-					va += 0x1000;
+					va += PAGE_SIZE;
 					continue;
 				}
 
@@ -212,13 +217,14 @@ void *kmalloc(unsigned int size)
 			}
 			else
 			{
-				va += 0x1000;
+				// cprintf("----------------------------------------------------------------\n");
+				va += PAGE_SIZE;
 			}
 		}
 		else
 		{
 			// cprintf("Page Table Not Exist %d\n", i);
-			va += 0x1000;
+			va += PAGE_SIZE;
 		}
 
 		if (va > KERNEL_HEAP_MAX)
@@ -250,7 +256,7 @@ void kfree(void *virtual_address)
 		// return;
 	}
 
-	cprintf("Enter\n");
+	// cprintf("Enter\n");
 
 	uint32 size;
 	for (int i = 0; i < NUM_OF_KHEAP_PAGES; i++)
@@ -276,13 +282,13 @@ void kfree(void *virtual_address)
 		// struct FrameInfo *fptr;
 		// uint32 *ptrPageTable;
 		// fptr = get_frame_info(ptr_page_directory, (uint32)virtual_address, &ptrPageTable);
-		unmap_frame(ptr_page_directory, (uint32)virtual_address);
 		// free_frame(fptr);
-		virtual_address += 0x1000;
+		unmap_frame(ptr_page_directory, (uint32)virtual_address);
+		virtual_address += PAGE_SIZE;
 		// cprintf("Finish UnMapping\n");
 	}
 
-	cprintf("Quit\n");
+	// cprintf("Quit\n");
 
 	// panic("kfree() is not implemented yet...!!");
 }

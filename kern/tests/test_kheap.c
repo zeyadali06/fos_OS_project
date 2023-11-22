@@ -688,7 +688,7 @@ int test_kmalloc_firstfit1()
 		if ((uint32)ptr_allocations[9] != (ACTUAL_START + 4 * Mega))
 		{
 			correct = 0;
-			cprintf("Wrong start address for the allocated space... %x %x\n"), (uint32)ptr_allocations[9], (ACTUAL_START + 4 * Mega);
+			cprintf("Wrong start address for the allocated space... %x %x\n", (uint32)ptr_allocations[9], (ACTUAL_START + 4 * Mega));
 		}
 		if ((pf_calculate_free_frames() - freeDiskFrames) != 0)
 		{
@@ -1473,14 +1473,12 @@ int test_kfree_bestfirstfit()
 			}
 		}
 	}
-	cprintf("ok\n");
 	// kfree some of the allocated spaces [10%]
 	{
 		// kfree 1st 2 MB
 		int freeFrames = sys_calculate_free_frames();
 		int freeDiskFrames = pf_calculate_free_frames();
 		kfree(ptr_allocations[0]);
-		cprintf("ok1\n");
 		if ((freeDiskFrames - pf_calculate_free_frames()) != 0)
 		{
 			correct = 0;
@@ -1491,7 +1489,6 @@ int test_kfree_bestfirstfit()
 			correct = 0;
 			cprintf("Wrong kfree: pages in memory are not freed correctly\n");
 		}
-		cprintf("ok2\n");
 
 		// kfree 1st 2 KB
 		freeFrames = sys_calculate_free_frames();
@@ -1632,7 +1629,7 @@ int test_kfree_bestfirstfit()
 		if ((uint32)ptr_allocations[10] != (ACTUAL_START + 3 * Mega /*+ 4*kilo*/))
 		{
 			correct = 0;
-			cprintf("Wrong start address for the allocated space... check return address of kmalloc\n");
+			cprintf("Wrong start address for the allocated space... check return address of kmalloc %x %x\n", (uint32)ptr_allocations[10], (ACTUAL_START + 3 * Mega /*+ 4*kilo*/));
 		}
 		if ((pf_calculate_free_frames() - freeDiskFrames) != 0)
 		{
