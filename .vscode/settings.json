@@ -64,6 +64,7 @@
     "test_kheap.h": "c",
     "types.h": "c",
     "queue.h": "c",
-    "command_prompt.h": "c"
+    "command_prompt.h": "c",
+    "memlayout.h": "c"
   }
 }
