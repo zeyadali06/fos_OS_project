@@ -23,7 +23,8 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	// rlimit = 0xF8000000
 
 	uint32 virtual_address = daStart;
-	for (int i = 0; i < ROUNDUP(initSizeToAllocate, PAGE_SIZE) / PAGE_SIZE; i++)
+
+	for (int i = 0; i < ROUNDUP(((uint32)rlimit - KERNEL_HEAP_START), PAGE_SIZE) / PAGE_SIZE; i++)
 	{
 		struct FrameInfo *ptr;
 		if (allocate_frame(&ptr) == 0)
@@ -68,6 +69,7 @@ void *sbrk(int increment)
 
 	if (increment > 0)
 	{
+		// cprintf("\n%x\n", increment);
 		// cprintf("%x %x %x %d\n", brk + ROUNDUP(increment, PAGE_SIZE), rlimit, ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE, free_frame_list.size);
 		if (brk + ROUNDUP(increment, PAGE_SIZE) <= rlimit && (ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE) <= free_frame_list.size)
 		{
@@ -79,6 +81,7 @@ void *sbrk(int increment)
 				struct FrameInfo *ptr;
 				if (allocate_frame(&ptr) == 0)
 				{
+					// cprintf("enter sbrk\n");
 					map_frame(ptr_page_directory, ptr, (uint32)brk, PERM_WRITEABLE);
 					ptr->va = (uint32)brk & 0xFFFFF000;
 				}
@@ -140,6 +143,10 @@ void *kmalloc(unsigned int size)
 	{
 		// cprintf("----------------------------------------------------------------\n");
 		return alloc_block(size, DA_FF);
+		// void *virtual = alloc_block(size, DA_FF);
+		// struct FrameInfo *ptrFrameInfo;
+		// get_frame_info(ptr_page_directory, (uint32) virtual, NULL)->va = (uint32) virtual && 0xFFFFF000;
+		// return virtual;
 	}
 
 	// cprintf("malloc   size: %d  ", ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
@@ -308,18 +315,14 @@ unsigned int kheap_virtual_address(unsigned int physical_address)
 	// EFFICIENT IMPLEMENTATION ~O(1) IS REQUIRED ==================
 
 	struct FrameInfo *ptr_frame_info;
-	ptr_frame_info = to_frame_info((uint32)physical_address);
+	ptr_frame_info = to_frame_info((uint32)physical_address & 0xFFFFF000);
 	if (ptr_frame_info->references == 0)
 	{
 		return 0;
 	}
-	// cprintf("enter\n");
-
 	uint32 va = ptr_frame_info->va;
-	// uint32 offset = ((uint32)physical_address / PAGE_SIZE) & 0xFFF;
 	uint32 offset = physical_address - ROUNDDOWN(physical_address, PAGE_SIZE);
-	// cprintf("physical_address:%x   returned:%x\n", physical_address, va + offset);
-
+	// cprintf("va = %x, offset = %x, PA = %x,", va, offset, physical_address);
 	return va + offset;
 
 	// change this "return" according to your answer

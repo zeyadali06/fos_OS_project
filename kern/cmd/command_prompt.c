@@ -337,7 +337,7 @@ void run_command_prompt()
 		// test_kmalloc_firstfit1();
 		// test_kmalloc_firstfit2();
 		// test_kheap_phys_addr();
-		test_kheap_virt_addr();
+		// test_kheap_virt_addr();
 		// parse and execute the command
 		if (command_line != NULL)
 			if (execute_command(command_line) < 0)
