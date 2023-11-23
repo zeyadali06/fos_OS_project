@@ -310,7 +310,8 @@ int8 num_repeated_fault  = 0;
 void fault_handler(struct Trapframe *tf)
 {
 	int userTrap = 0;
-	if ((tf->tf_cs & 3) == 3) {
+	if ((tf->tf_cs & 3) == 3)
+	{
 		userTrap = 1;
 	}
 	uint32 fault_va;
@@ -322,10 +323,10 @@ void fault_handler(struct Trapframe *tf)
 	//	print_trapframe(tf);
 
 	/******************************************************/
-	/*2022*///If same fault va for 3 times, then panic
+	/*2022*/ // If same fault va for 3 times, then panic
 	if (last_fault_va == fault_va)
 	{
-		num_repeated_fault++ ;
+		num_repeated_fault++;
 		if (num_repeated_fault == 3)
 		{
 			print_trapframe(tf);
@@ -336,12 +337,12 @@ void fault_handler(struct Trapframe *tf)
 	{
 		num_repeated_fault = 0;
 	}
-	last_fault_va = fault_va ;
+	last_fault_va = fault_va;
 	/******************************************************/
-	//2017: Check stack overflow for Kernel
+	// 2017: Check stack overflow for Kernel
 	if (!userTrap)
 	{
-		//cprintf("trap from KERNEL\n");
+		// cprintf("trap from KERNEL\n");
 		if (fault_va < KERNEL_STACK_TOP - KERNEL_STACK_SIZE && fault_va >= USER_LIMIT)
 			panic("Kernel: stack overflow exception!");
 #if USE_KHEAP
@@ -349,35 +350,59 @@ void fault_handler(struct Trapframe *tf)
 			panic("Kernel: heap overflow exception!");
 #endif
 	}
-	//2017: Check stack underflow for User
+	// 2017: Check stack underflow for User
 	else
 	{
-		//cprintf("trap from USER\n");
+		// cprintf("trap from USER\n");
 		if (fault_va >= USTACKTOP && fault_va < USER_TOP)
 			panic("User: stack underflow exception!");
 	}
 
-	//get a pointer to the environment that caused the fault at runtime
-	struct Env* faulted_env = curenv;
+	// get a pointer to the environment that caused the fault at runtime
+	struct Env *faulted_env = curenv;
 
-	//check the faulted address, is it a table or not ?
-	//If the directory entry of the faulted address is NOT PRESENT then
-	if ( (faulted_env->env_page_directory[PDX(fault_va)] & PERM_PRESENT) != PERM_PRESENT)
+	// check the faulted address, is it a table or not ?
+	// If the directory entry of the faulted address is NOT PRESENT then
+	if ((faulted_env->env_page_directory[PDX(fault_va)] & PERM_PRESENT) != PERM_PRESENT)
 	{
 		// we have a table fault =============================================================
-		//cprintf("[%s] user TABLE fault va %08x\n", curenv->prog_name, fault_va);
-		faulted_env->tableFaultsCounter ++ ;
+		// cprintf("[%s] user TABLE fault va %08x\n", curenv->prog_name, fault_va);
+		faulted_env->tableFaultsCounter++;
 
 		table_fault_handler(faulted_env, fault_va);
 	}
 	else
 	{
 		if (userTrap)
-		{
+		{ //faulted info 
+
+			if (((uint32)pt_get_page_permissions(ptr_page_directory, fault_va) & PERM_WRITEABLE) != PERM_WRITEABLE)
+			{
+				sched_kill_env(faulted_env->env_id);
+			}
+			// if(((uint32)fault_va& PERM_WRITEABLE)!=PERM_WRITEABLE){
+			// 	sched_kill_env(curenv->env_id);
+			// }
+			if ((uint32)fault_va >= KERNEL_HEAP_START && (uint32)fault_va <= KERNEL_HEAP_MAX)
+			{
+				sched_kill_env(faulted_env->env_id);
+			}
+			if ((uint32)fault_va >= USER_HEAP_START && (uint32)fault_va <= USER_HEAP_MAX)
+			{
+				// if(((uint32)fault_va& PERM_PRESENT)!=PERM_PRESENT)
+				// {
+				// 		sched_kill_env(curenv->env_id);
+				// }
+				if (((uint32)pt_get_page_permissions(ptr_page_directory, fault_va) & PERM_PRESENT) != PERM_PRESENT)
+				{
+					sched_kill_env(faulted_env->env_id);
+				}
+			}
+
 			/*============================================================================================*/
-			//TODO: [PROJECT'23.MS2 - #13] [3] PAGE FAULT HANDLER - Check for invalid pointers
+			// TODO: [PROJECT'23.MS2 - #13] [3] PAGE FAULT HANDLER - Check for invalid pointers
 			//(e.g. pointing to unmarked user heap page, kernel or wrong access rights),
-			//your code is here
+			// your code is here
 
 			/*============================================================================================*/
 		}
@@ -385,35 +410,30 @@ void fault_handler(struct Trapframe *tf)
 		/*2022: Check if fault due to Access Rights */
 		int perms = pt_get_page_permissions(faulted_env->env_page_directory, fault_va);
 		if (perms & PERM_PRESENT)
-			panic("Page @va=%x is exist! page fault due to violation of ACCESS RIGHTS\n", fault_va) ;
-
+			panic("Page @va=%x is exist! page fault due to violation of ACCESS RIGHTS\n", fault_va);
 
 		// we have normal page fault =============================================================
-		faulted_env->pageFaultsCounter ++ ;
+		faulted_env->pageFaultsCounter++;
 
 		//		cprintf("[%08s] user PAGE fault va %08x\n", curenv->prog_name, fault_va);
 		//		cprintf("\nPage working set BEFORE fault handler...\n");
 		//		env_page_ws_print(curenv);
 
-		if(isBufferingEnabled())
+		if (isBufferingEnabled())
 		{
 			__page_fault_handler_with_buffering(faulted_env, fault_va);
 		}
 		else
 		{
-			//page_fault_handler(faulted_env, fault_va);
+			// page_fault_handler(faulted_env, fault_va);
 			page_fault_handler(faulted_env, fault_va);
 		}
 		//		cprintf("\nPage working set AFTER fault handler...\n");
 		//		env_page_ws_print(curenv);
-
-
 	}
 
 	/*************************************************************/
-	//Refresh the TLB cache
+	// Refresh the TLB cache
 	tlbflush();
 	/*************************************************************/
-
 }
-

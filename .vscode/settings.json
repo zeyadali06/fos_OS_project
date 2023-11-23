@@ -63,6 +63,7 @@
     "dynamic_allocator.h": "c",
     "test_kheap.h": "c",
     "types.h": "c",
-    "queue.h": "c"
+    "queue.h": "c",
+    "command_prompt.h": "c"
   }
 }
