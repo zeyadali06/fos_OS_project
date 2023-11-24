@@ -535,12 +535,12 @@ void *sys_sbrk(int increment)
 		if (env->user_seg_brk+ROUNDUP(increment,PAGE_SIZE)<=env->user_hard_limit){
 			env->user_seg_brk+=ROUNDUP(increment,PAGE_SIZE);
 			return (void *) prevbrk;
-		}	
+		}
 		else{
 			return (void *)-1;
 		}
 	}
-	
+
 	if(increment<0){
 		if(env->user_seg_brk-increment>=env->startOfUserHeap){
 			for (int i = 0; i < ROUNDDOWN(increment, PAGE_SIZE) / PAGE_SIZE; i++)
@@ -577,7 +577,7 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		// done added first 3 cases
 		//=====================================================================
 	case SYS_get_hard_limit:
-		return uint32 sys_get_hard_limit(struct Env * e);
+		return  sys_get_hard_limit((struct Env *)a1);
 		break;
 	case SYS_sbrk:
 		return (uint32)sys_sbrk(a1);
