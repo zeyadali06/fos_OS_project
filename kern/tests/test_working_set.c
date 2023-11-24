@@ -113,7 +113,7 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 	struct Env* env = curenv;
 	int WS_list_validation = 1;
 	struct WorkingSetElement* ptr_WS_element;
-
+	// cprintf("ok\n");
 	if (chk_status == 0 || chk_status == 1)
 	{
 		if(LIST_SIZE(&(env->page_WS_list)) != actual_WS_list_size)
@@ -121,6 +121,7 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 			return WS_list_validation = 0;
 		}
 	}
+	// cprintf("ok\n");
 	//if it's required to check the last_WS_element
 	if (last_WS_element_content != 0)
 	{
@@ -129,6 +130,8 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 			return WS_list_validation = 0;
 		}
 	}
+	// cprintf("ok\n");
+
 	//if the order of the content is important to check
 	if (chk_status == 1)
 	{
@@ -184,6 +187,7 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 			}
 		}
 	}
+	// cprintf("WS_list_validation\n");
 
 	return WS_list_validation;
 #else

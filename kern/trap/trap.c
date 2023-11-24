@@ -298,6 +298,7 @@ uint32 last_fault_va = 0;
 int8 num_repeated_fault = 0;
 void fault_handler(struct Trapframe *tf)
 {
+	// cprintf("Enter fault_handler()\n");
 	int userTrap = 0;
 	if ((tf->tf_cs & 3) == 3)
 	{
@@ -364,36 +365,51 @@ void fault_handler(struct Trapframe *tf)
 	{
 		if (userTrap)
 		{ // faulted info
+			int perms = pt_get_page_permissions(faulted_env->env_page_directory, fault_va);
+			// cprintf("%x\n", fault_va);
 
-			if ((uint32)fault_va >= KERNEL_BASE)
+			if ((uint32)fault_va >= USER_LIMIT)
 			{
 				sched_kill_env(faulted_env->env_id);
 			}
 
-			if (!((uint32)pt_get_page_permissions(faulted_env->env_page_directory, fault_va) & PERM_WRITEABLE))
+			if (fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX)
+			{
+				// cprintf("%x\n", fault_va);
+				if (!(perms & PERM_PRESENT))
+				{
+					sched_kill_env(faulted_env->env_id);
+				}
+			}
+
+			cprintf("%x\n", fault_va);
+			// uint32 *ptrPage;
+			// get_page_table(curenv->env_page_directory, fault_va, &ptrPage);
+			if (!(perms & PERM_WRITEABLE) && (get_frame_info(curenv->env_page_directory, fault_va, NULL) != 0))
 			{
 				sched_kill_env(faulted_env->env_id);
 			}
 
-			if ((uint32)pt_get_page_permissions(faulted_env->env_page_directory, fault_va) & PERM_USED)
-			{
-				sched_kill_env(faulted_env->env_id);
-			}
-
-			// if(((uint32)fault_va& PERM_WRITEABLE)!=PERM_WRITEABLE){
-			// 	sched_kill_env(curenv->env_id);
+			// if ((uint32)fault_va >= KERNEL_BASE)
+			// {
+			// 	// cprintf("KERNEL_BASE\n");
+			// 	sched_kill_env(faulted_env->env_id);
 			// }
 
-			// if ((uint32)fault_va >= USER_HEAP_START && (uint32)fault_va <= USER_HEAP_MAX)
-			// {
-			// 	// if(((uint32)fault_va& PERM_PRESENT)!=PERM_PRESENT)
-			// 	// {
-			// 	// 		sched_kill_env(curenv->env_id);
-			// 	// }
-			// 	if ((uint32)pt_get_page_permissions(ptr_page_directory, fault_va) & PERM_PRESENT)
+			// // if (fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX)
+			// // {
+			// 	if ((uint32)pt_get_page_permissions(faulted_env->env_page_directory, fault_va) & PERM_USED)
 			// 	{
+			// 		// cprintf("PERM_USED\n");
 			// 		sched_kill_env(faulted_env->env_id);
 			// 	}
+			// // }
+
+			// cprintf("%x\n", fault_va);
+			// if (!((uint32)pt_get_page_permissions(faulted_env->env_page_directory, fault_va) & PERM_WRITEABLE))
+			// {
+			// 	// cprintf("PERM_WRITEABLE\n");
+			// 	sched_kill_env(faulted_env->env_id);
 			// }
 
 			/*============================================================================================*/

@@ -29,7 +29,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 		struct FrameInfo *ptr;
 		if (allocate_frame(&ptr) == 0)
 		{
-			map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE);
+			map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE|PERM_USED);
 			ptr->va = (uint32)virtual_address & 0xFFFFF000;
 		}
 		else
@@ -82,7 +82,7 @@ void *sbrk(int increment)
 				if (allocate_frame(&ptr) == 0)
 				{
 					// cprintf("enter sbrk\n");
-					map_frame(ptr_page_directory, ptr, (uint32)brk, PERM_WRITEABLE);
+					map_frame(ptr_page_directory, ptr, (uint32)brk, PERM_WRITEABLE | PERM_USED);
 					ptr->va = (uint32)brk & 0xFFFFF000;
 				}
 				// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE));
@@ -202,7 +202,7 @@ void *kmalloc(unsigned int size)
 					struct FrameInfo *ptr_frame_info;
 					if (allocate_frame(&ptr_frame_info) == 0)
 					{
-						map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE);
+						map_frame(ptr_page_directory, ptr_frame_info, va, PERM_WRITEABLE|PERM_USED);
 						ptr_frame_info->va = va & 0xFFFFF000;
 					}
 					else

@@ -112,104 +112,67 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 	uint32 wsSize = env_page_ws_get_size(curenv);
 #endif
 
+	cprintf("Enter\n");
 	if (wsSize < (curenv->page_WS_max_size))
 	{
 		// cprintf("PLACEMENT=========================WS Size = %d\n", wsSize );
 		// TODO: [PROJECT'23.MS2 - #15] [3] PAGE FAULT HANDLER - Placement
 		//  Write your code here, remove the panic and write your code
-		//  panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
+		// panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
 
+		cprintf("%d\n", pf_calculate_allocated_pages(curenv));
+		struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
 		struct FrameInfo *frame_info_ptr;
+
 		if (allocate_frame(&frame_info_ptr) == 0)
 		{
-			map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_PRESENT | PERM_USER | PERM_WRITEABLE);
+			map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_USER | PERM_WRITEABLE);
+			frame_info_ptr->va = fault_va;
 		}
+
 		if (pf_read_env_page(curenv, (void *)fault_va) == E_PAGE_NOT_EXIST_IN_PF)
 		{
-			if (fault_va <= USTACKTOP && fault_va >= USTACKBOTTOM)
-			{
+			// cprintf("%x %x %x %x %x\n", fault_va, USTACKTOP, USTACKBOTTOM, USER_HEAP_MAX, USER_HEAP_START);
 
+			if ((fault_va <= USTACKTOP && fault_va >= USTACKBOTTOM) || (fault_va <= USER_HEAP_MAX && fault_va >= USER_HEAP_START))
+			{
+				// cprintf("USTACKTOP\n");
+				// if (pf_add_empty_env_page(curenv, fault_va, 0) == E_NO_PAGE_FILE_SPACE)
+				// 	panic("ERROR: No enough virtual space on the page file");
+				// pf_add_empty_env_page(curenv, fault_va, 0);
+				LIST_INSERT_TAIL(&(curenv->page_WS_list), ele);
+				return;
+			}
+			else
+			{
+				// cprintf("Kill\n");
+				sched_kill_env(curenv->env_id);
+				return;
 			}
 		}
 
-		// placement
-		struct FrameInfo *frame_info_ptr;
-		int ret = allocate_frame(&frame_info_ptr);
-		if (ret == 0)
-		{
-			if (ret == E_PAGE_NOT_EXIST_IN_PF)
-			{
-				// CHECK if it is a stack page
-				if (fault_va < USTACKTOP && fault_va >= USTACKBOTTOM)
-				{
-					pf_add_empty_env_page(curenv, fault_va, 0);
-				}
-				else
-					panic("Invalid access %x", fault_va);
-			}
+		LIST_INSERT_TAIL(&(curenv->page_WS_list), ele);
+		// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, fault_va, NULL));
 
-			int size = curenv->page_WS_max_size;
-			for (int i = 0; i < size; i++)
-			{
-				if (curenv->__ptr_tws[curenv->page_last_WS_index].empty)
-					break;
-				else if (curenv->__ptr_tws[i].empty)
-				{
-					curenv->page_last_WS_index = i;
-					break;
-				}
-			}
-			// env_page_ws_set_entry(curenv, curenv->page_last_WS_index, fault_va);
-			// curenv->page_last_WS_index++;
-			// curenv->page_last_WS_index = curenv->page_last_WS_index % curenv->page_WS_max_size;
-		}
-		else
-		{
-			uint32 va = curenv->__ptr_tws[curenv->page_last_WS_index].virtual_address;
-			struct FrameInfo *frame_info_ptr;
-			frame_info_ptr = get_frame_info(curenv->env_page_directory, va, NULL);
-			uint32 perm = pt_get_page_permissions(curenv->env_page_directory, va);
-			if (perm & PERM_MODIFIED)
-			{
-				int ret = pf_update_env_page(curenv, va, frame_info_ptr);
-			}
-			unmap_frame(curenv->env_page_directory, va);
-			env_page_ws_invalidate(curenv, va);
-			// placement
-			struct FrameInfo *ptrFrameInfo;
-			int ret = allocate_frame(&ptrFrameInfo);
-			if (ret == 0)
-			{
-				map_frame(curenv->env_page_directory, ptrFrameInfo, fault_va, PERM_PRESENT | PERM_USER | PERM_WRITEABLE);
-				ret = pf_read_env_page(curenv, (void *)fault_va);
-				if (ret == E_PAGE_NOT_EXIST_IN_PF)
-				{
-					// CHECK if it is a stack page
-					if (fault_va < USTACKTOP && fault_va >= USTACKBOTTOM)
-					{
-						pf_add_empty_env_page(curenv, fault_va, 0);
-					}
-					else
-						panic("Invalid access %x", fault_va);
-				}
+		// cprintf("%d\n", pf_calculate_allocated_pages(curenv));
 
-				int size = curenv->page_WS_max_size;
-				for (int i = 0; i < size; i++)
-				{
-					if (curenv->__ptr_tws[curenv->page_last_WS_index].empty)
-						break;
-					else if (curenv->__ptr_tws[i].empty)
-					{
-						curenv->page_last_WS_index = i;
-						break;
-					}
-				}
-				// env_page_ws_set_entry(curenv, curenv->page_last_WS_index, fault_va);
-				// curenv->page_last_WS_index++;
-				// curenv->page_last_WS_index = curenv->page_last_WS_index % curenv->page_WS_max_size;
-			}
-		}
-		// refer to the project presentation and documentation for details
+		// cprintf("Quit\n");
+
+		// int size = curenv->page_WS_max_size;
+		// for (int i = 0; i < size; i++)
+		// {
+		// 	if (curenv->__ptr_tws[curenv->page_last_WS_index].empty)
+		// 		break;
+		// 	else if (curenv->__ptr_tws[i].empty)
+		// 	{
+		// 		curenv->page_last_WS_index = i;
+		// 		break;
+		// 	}
+		// }
+
+		// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, fault_va, NULL));
+
+				// refer to the project presentation and documentation for details
 	}
 	else
 	{

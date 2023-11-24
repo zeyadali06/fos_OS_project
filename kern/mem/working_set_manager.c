@@ -20,14 +20,14 @@ inline struct WorkingSetElement *env_page_ws_list_create_element(struct Env *e, 
 	//  Write your code here, remove the panic and write your code
 	// panic("env_page_ws_list_create_element() is not implemented yet...!!");
 	// return NULL;
-	struct WorkingSetElement *newelement = (struct WorkingSetElement *)kmalloc(sizeof(newelement));
+	struct WorkingSetElement *newelement = (struct WorkingSetElement *)kmalloc(sizeof(struct WorkingSetElement));
 	if (newelement != NULL)
 	{
 		newelement->virtual_address = virtual_address;
 		return newelement;
 	}
 	else
-		panic("failur");
+		panic("Failure");
 }
 
 inline void env_page_ws_invalidate(struct Env* e, uint32 virtual_address)
@@ -137,7 +137,7 @@ void env_page_ws_print(struct Env *e)
 		}
 		for (; i < e->page_WS_max_size; ++i)
 		{
-			cprintf("EMPTY LOCATION");
+			cprintf("EMPTY LOCATION\n");
 		}
 	}
 }
