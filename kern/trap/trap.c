@@ -382,13 +382,15 @@ void fault_handler(struct Trapframe *tf)
 				}
 			}
 
-			// cprintf("%x\n", fault_va);
+			cprintf("ok1\n");
 			// uint32 *ptrPage;
 			// get_page_table(curenv->env_page_directory, fault_va, &ptrPage);
-			// if (!(perms & PERM_WRITEABLE) && (get_frame_info(curenv->env_page_directory, fault_va, NULL) != 0))
-			// {
-			// 	sched_kill_env(faulted_env->env_id);
-			// }
+			uint32 *ptr_page_table;
+			if (!(perms & PERM_WRITEABLE) && (get_frame_info(curenv->env_page_directory, fault_va, &ptr_page_table) != 0))
+			{
+				cprintf("ok\n");
+				sched_kill_env(faulted_env->env_id);
+			}
 
 			// if ((uint32)fault_va >= KERNEL_BASE)
 			// {
