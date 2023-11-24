@@ -158,6 +158,9 @@ struct Env {
 	uint32 nPageIn, nPageOut, nNewPageAdded;
 	uint32 nClocks ;
 
+	uint32 startOfUserHeap;
+	uint32 user_seg_brk;
+	uint32 user_hard_limit;
 };
 
 #define PRIORITY_LOW    		1
