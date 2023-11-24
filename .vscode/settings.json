@@ -65,6 +65,8 @@
     "types.h": "c",
     "queue.h": "c",
     "command_prompt.h": "c",
-    "memlayout.h": "c"
+    "memlayout.h": "c",
+    "trap.h": "c",
+    "fault_handler.h": "c"
   }
 }
