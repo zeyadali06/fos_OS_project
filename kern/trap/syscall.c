@@ -498,10 +498,9 @@ void sys_bypassPageFault(uint8 instrLength)
 /*2024*/
 void *sys_sbrk(int increment)
 {
-
 	// TODO: [PROJECT'23.MS2 - #08] [2] USER HEAP - Block Allocator - sys_sbrk() [Kernel Side]
 	// MS2: COMMENT THIS LINE BEFORE START CODING====
-	return (void *)-1;
+
 	//====================================================
 
 	/*2023*/
@@ -524,6 +523,38 @@ void *sys_sbrk(int increment)
 	 * 		You might have to undo any operations you have done so far in this case.
 	 */
 	struct Env *env = curenv; // the current running Environment to adjust its break limit
+	if (increment==0)
+		return(void *) env->user_seg_brk;
+	uint32 prevbrk=env->user_seg_brk;
+	if(increment>0){
+		if (env->user_seg_brk+ROUNDUP(increment,PAGE_SIZE)<=env->user_hard_limit){
+			env->user_seg_brk+=ROUNDUP(increment,PAGE_SIZE);
+			return (void *) prevbrk;
+		}	
+		else{
+			return (void *)-1;
+		}
+	}
+	
+	if(increment<0){
+		if(env->user_seg_brk-increment>=env->startOfUserHeap){
+			for (int i = 0; i < ROUNDDOWN(increment, PAGE_SIZE) / PAGE_SIZE; i++)
+			{
+				 uint32 *ptrPageTable;
+				if(get_frame_info(env->env_page_directory,env->user_seg_brk,&ptrPageTable)!=0){
+				unmap_frame(ptr_page_directory, (uint32)env->user_seg_brk);
+				}
+
+				env->user_seg_brk -= PAGE_SIZE;
+			}
+			env->user_seg_brk=prevbrk-increment;
+			return (void *)env->user_seg_brk;
+		}
+		else{
+			return (void *)-1;
+		}
+	}
+	return (void *)-1;
 }
 
 /**************************************************************************/
