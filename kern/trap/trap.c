@@ -21,7 +21,8 @@ static struct Taskstate ts;
 ///
 
 struct Gatedesc idt[256] = {{0}};
-struct Pseudodesc idt_pd = {sizeof(idt) - 1, (uint32)idt};
+struct Pseudodesc idt_pd = {
+	sizeof(idt) - 1, (uint32)idt};
 extern void (*PAGE_FAULT)();
 extern void (*SYSCALL_HANDLER)();
 extern void (*DBL_FAULT)();
@@ -295,11 +296,10 @@ void trap(struct Trapframe *tf)
 
 /*2022*/
 uint32 last_fault_va = 0;
-
 int8 num_repeated_fault = 0;
-
 void fault_handler(struct Trapframe *tf)
 {
+	// cprintf("Enter fault_handler()\n");
 	int userTrap = 0;
 	if ((tf->tf_cs & 3) == 3)
 	{
@@ -319,7 +319,10 @@ void fault_handler(struct Trapframe *tf)
 	{
 		num_repeated_fault++;
 		if (num_repeated_fault == 3)
+		{
+			print_trapframe(tf);
 			panic("Failed to handle fault at va=%x: same va is faulted for 3 successive times\n", fault_va);
+		}
 	}
 	else
 	{
@@ -330,13 +333,19 @@ void fault_handler(struct Trapframe *tf)
 	// 2017: Check stack overflow for Kernel
 	if (!userTrap)
 	{
+		// cprintf("trap from KERNEL\n");
 		if (fault_va < KERNEL_STACK_TOP - KERNEL_STACK_SIZE && fault_va >= USER_LIMIT)
 			panic("Kernel: stack overflow exception!");
+#if USE_KHEAP
+		if (fault_va >= KERNEL_HEAP_MAX)
+			panic("Kernel: heap overflow exception!");
+#endif
 	}
 	// 2017: Check stack underflow for User
 	else
 	{
-		if (fault_va >= USTACKTOP)
+		// cprintf("trap from USER\n");
+		if (fault_va >= USTACKTOP && fault_va < USER_TOP)
 			panic("User: stack underflow exception!");
 	}
 
@@ -356,10 +365,59 @@ void fault_handler(struct Trapframe *tf)
 	else
 	{
 		if (userTrap)
-		{
+		{ // faulted info
+			int perms = pt_get_page_permissions(faulted_env->env_page_directory, fault_va);
+			// cprintf("%x\n", fault_va);
+
+			if ((uint32)fault_va > USER_LIMIT)
+			{
+				sched_kill_env(faulted_env->env_id);
+			}
+
+			if (fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX)
+			{
+				// cprintf("%x\n", fault_va);
+				if (!(perms & PERM_PRESENT))
+				{
+					sched_kill_env(faulted_env->env_id);
+				}
+			}
+
+			// cprintf("ok1\n");
+			// uint32 *ptrPage;
+			// get_page_table(curenv->env_page_directory, fault_va, &ptrPage);
+			uint32 *ptr_page_table;
+			if (!(perms & PERM_WRITEABLE) && (get_frame_info(curenv->env_page_directory, fault_va, &ptr_page_table) != 0))
+			{
+				// cprintf("ok\n");
+				sched_kill_env(faulted_env->env_id);
+			}
+
+			// if ((uint32)fault_va >= KERNEL_BASE)
+			// {
+			// 	// cprintf("KERNEL_BASE\n");
+			// 	sched_kill_env(faulted_env->env_id);
+			// }
+
+			// // if (fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX)
+			// // {
+			// 	if ((uint32)pt_get_page_permissions(faulted_env->env_page_directory, fault_va) & PERM_USED)
+			// 	{
+			// 		// cprintf("PERM_USED\n");
+			// 		sched_kill_env(faulted_env->env_id);
+			// 	}
+			// // }
+
+			// cprintf("%x\n", fault_va);
+			// if (!((uint32)pt_get_page_permissions(faulted_env->env_page_directory, fault_va) & PERM_WRITEABLE))
+			// {
+			// 	// cprintf("PERM_WRITEABLE\n");
+			// 	sched_kill_env(faulted_env->env_id);
+			// }
+
 			/*============================================================================================*/
 			// TODO: [PROJECT'23.MS2 - #13] [3] PAGE FAULT HANDLER - Check for invalid pointers
-			//(e.g. pointing to unmapped memory, kernel or wrong access rights),
+			//(e.g. pointing to unmarked user heap page, kernel or wrong access rights),
 			// your code is here
 
 			/*============================================================================================*/

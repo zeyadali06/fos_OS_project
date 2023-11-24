@@ -6,10 +6,6 @@
 #	http://aegis.sourceforge.net/auug97.pdf
 #
 OBJDIR := obj
-V      := @
-QEMU   := qemu-system-i386
-
-
 
 ifdef LAB
 SETTINGLAB := true
@@ -43,7 +39,6 @@ TOP = .
 
 # try to infer the correct GCCPREFIX
 ifndef GCCPREFIX
-
 GCCPREFIX := $(shell if i386-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/null 2>&1; \
 	then echo 'i386-elf-'; \
 	elif objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
@@ -164,19 +159,6 @@ IMAGES = $(OBJDIR)/kern/bochs.img
 
 bochs: $(IMAGES)
 	bochs 'display_library: nogui'
-
-
-# Emulators
-
-GDBPORT 	= 26000
-QEMUGDB 	= -gdb tcp::$(GDBPORT)
-QEMUOPTS 	= -drive file=$(IMAGES),media=disk,format=raw -smp 2 -m 32 $(QEMUEXTRAS)
-
-qemu: all
-	$(V)$(QEMU) -serial mon:stdio $(QEMUOPTS)
-
-qemu-gdb: all
-	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
 # For deleting the build
 clean:
