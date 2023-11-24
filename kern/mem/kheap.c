@@ -24,7 +24,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 
 	uint32 virtual_address = daStart;
 
-	for (int i = 0; i < ROUNDUP(((uint32)rlimit - KERNEL_HEAP_START), PAGE_SIZE) / PAGE_SIZE; i++)
+	for (int i = 0; i < ROUNDUP(((uint32)rlimit - daStart), PAGE_SIZE) / PAGE_SIZE; i++)
 	{
 		struct FrameInfo *ptr;
 		if (allocate_frame(&ptr) == 0)
