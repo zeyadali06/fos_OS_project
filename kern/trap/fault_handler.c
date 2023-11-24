@@ -112,7 +112,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 	uint32 wsSize = env_page_ws_get_size(curenv);
 #endif
 
-	cprintf("Enter\n");
+	// cprintf("Enter\n");
 	if (wsSize < (curenv->page_WS_max_size))
 	{
 		// cprintf("PLACEMENT=========================WS Size = %d\n", wsSize );
@@ -120,7 +120,8 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 		//  Write your code here, remove the panic and write your code
 		// panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
 
-		cprintf("%d\n", pf_calculate_allocated_pages(curenv));
+		// cprintf("sizebefore:%d\n", pf_calculate_allocated_pages(curenv));
+
 		struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
 		struct FrameInfo *frame_info_ptr;
 
@@ -132,16 +133,23 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 
 		if (pf_read_env_page(curenv, (void *)fault_va) == E_PAGE_NOT_EXIST_IN_PF)
 		{
-			// cprintf("%x %x %x %x %x\n", fault_va, USTACKTOP, USTACKBOTTOM, USER_HEAP_MAX, USER_HEAP_START);
+			// cprintf("fault_va: %x\n", fault_va);
 
 			if ((fault_va <= USTACKTOP && fault_va >= USTACKBOTTOM) || (fault_va <= USER_HEAP_MAX && fault_va >= USER_HEAP_START))
 			{
 				// cprintf("USTACKTOP\n");
 				// if (pf_add_empty_env_page(curenv, fault_va, 0) == E_NO_PAGE_FILE_SPACE)
 				// 	panic("ERROR: No enough virtual space on the page file");
-				// pf_add_empty_env_page(curenv, fault_va, 0);
+
 				LIST_INSERT_TAIL(&(curenv->page_WS_list), ele);
-				return;
+				if (curenv->page_WS_max_size == (LIST_SIZE(&(curenv->page_WS_list))))
+				{
+					curenv->page_last_WS_element = LIST_FIRST(&(curenv->page_WS_list));
+				}
+				// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, 0, NULL));
+				// pf_add_empty_env_page(curenv, fault_va, 1);
+
+				// cprintf("sizeafter:%d, maxSize:%d\n", LIST_SIZE(&(curenv->page_WS_list)), curenv->page_WS_max_size);
 			}
 			else
 			{
@@ -151,28 +159,9 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 			}
 		}
 
-		LIST_INSERT_TAIL(&(curenv->page_WS_list), ele);
 		// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, fault_va, NULL));
 
-		// cprintf("%d\n", pf_calculate_allocated_pages(curenv));
-
-		// cprintf("Quit\n");
-
-		// int size = curenv->page_WS_max_size;
-		// for (int i = 0; i < size; i++)
-		// {
-		// 	if (curenv->__ptr_tws[curenv->page_last_WS_index].empty)
-		// 		break;
-		// 	else if (curenv->__ptr_tws[i].empty)
-		// 	{
-		// 		curenv->page_last_WS_index = i;
-		// 		break;
-		// 	}
-		// }
-
-		// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, fault_va, NULL));
-
-				// refer to the project presentation and documentation for details
+		// refer to the project presentation and documentation for details
 	}
 	else
 	{

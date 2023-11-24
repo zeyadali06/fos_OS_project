@@ -20,6 +20,7 @@ inline struct WorkingSetElement *env_page_ws_list_create_element(struct Env *e, 
 	//  Write your code here, remove the panic and write your code
 	// panic("env_page_ws_list_create_element() is not implemented yet...!!");
 	// return NULL;
+
 	struct WorkingSetElement *newelement = (struct WorkingSetElement *)kmalloc(sizeof(struct WorkingSetElement));
 	if (newelement != NULL)
 	{
