@@ -263,9 +263,9 @@ void sys_free_user_mem(uint32 virtual_address, uint32 size)
 		sched_kill_env(curenv->env_id);
 	}
 	else if ((uint32 *)virtual_address + size >= (uint32 *)USER_LIMIT)
-    {
-        sched_kill_env(curenv->env_id);
-    }
+	{
+		sched_kill_env(curenv->env_id);
+	}
 
 	if (isBufferingEnabled())
 	{
@@ -289,12 +289,17 @@ void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 		sched_kill_env(curenv->env_id);
 	}
 	else if ((uint32 *)virtual_address + size >= (uint32 *)USER_LIMIT)
-    {
-        sched_kill_env(curenv->env_id);
-    }
+	{
+		sched_kill_env(curenv->env_id);
+	}
 
 	allocate_user_mem(curenv, virtual_address, size);
 	return;
+}
+
+uint32 sys_get_hard_limit(struct Env *e)
+{
+	return e->user_hard_limit;
 }
 
 void sys_allocate_chunk(uint32 virtual_address, uint32 size, uint32 perms)
@@ -571,9 +576,10 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		// TODO: [PROJECT'23.MS1 - #4] [2] SYSTEM CALLS - Add suitable code here
 		// done added first 3 cases
 		//=====================================================================
-
+	case SYS_get_hard_limit:
+		return uint32 sys_get_hard_limit(struct Env * e);
+		break;
 	case SYS_sbrk:
-
 		return (uint32)sys_sbrk(a1);
 		break;
 	case SYS_allocate_user_mem:
