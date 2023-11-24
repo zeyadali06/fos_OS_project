@@ -115,7 +115,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 	// cprintf("Enter\n");
 	if (wsSize < (curenv->page_WS_max_size))
 	{
-		cprintf("1");
+		// cprintf("1");
 		// cprintf("PLACEMENT=========================WS Size = %d\n", wsSize );
 		// TODO: [PROJECT'23.MS2 - #15] [3] PAGE FAULT HANDLER - Placement
 		//  Write your code here, remove the panic and write your code
@@ -128,18 +128,18 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 
 		if (allocate_frame(&frame_info_ptr) == 0)
 		{
-			cprintf("2\n");
+			// cprintf("2\n");
 			map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_USER | PERM_WRITEABLE);
 			frame_info_ptr->va = fault_va;
 		}
 
 		if (pf_read_env_page(curenv, (void *)fault_va) == E_PAGE_NOT_EXIST_IN_PF)
 		{
-			cprintf("fault_va: %x  %x  %x  %x  %x  \n", fault_va,USTACKBOTTOM,USTACKTOP, USER_HEAP_START,USER_HEAP_MAX);
-				
+			// cprintf("fault_va: %x  %x  %x  %x  %x  \n", fault_va,USTACKBOTTOM,USTACKTOP, USER_HEAP_START,USER_HEAP_MAX);
+
 			if ((fault_va <= USTACKTOP && fault_va >= USTACKBOTTOM) || (fault_va <= USER_HEAP_MAX && fault_va >= USER_HEAP_START))
 			{
-					cprintf("4");
+				// cprintf("4");
 				// cprintf("USTACKTOP\n");
 				// if (pf_add_empty_env_page(curenv, fault_va, 0) == E_NO_PAGE_FILE_SPACE)
 				// 	panic("ERROR: No enough virtual space on the page file");
@@ -147,7 +147,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 				LIST_INSERT_TAIL(&(curenv->page_WS_list), ele);
 				if (curenv->page_WS_max_size == (LIST_SIZE(&(curenv->page_WS_list))))
 				{
-						cprintf("5");
+					// cprintf("5");
 					curenv->page_last_WS_element = LIST_FIRST(&(curenv->page_WS_list));
 				}
 				// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, 0, NULL));
@@ -157,7 +157,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 			}
 			else
 			{
-					cprintf("6");
+				// cprintf("6");
 				// cprintf("Kill\n");
 				sched_kill_env(curenv->env_id);
 				return;
@@ -170,7 +170,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 	}
 	else
 	{
-			cprintf("7");
+		// cprintf("7");
 		// cprintf("REPLACEMENT=========================WS Size = %d\n", wsSize );
 		// refer to the project presentation and documentation for details
 		if (isPageReplacmentAlgorithmFIFO())
