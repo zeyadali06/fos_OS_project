@@ -111,7 +111,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 	int iWS = curenv->page_last_WS_index;
 	uint32 wsSize = env_page_ws_get_size(curenv);
 #endif
-
+	
 	// cprintf("Enter\n");
 	if (wsSize < (curenv->page_WS_max_size))
 	{
