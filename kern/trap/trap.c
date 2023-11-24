@@ -187,7 +187,8 @@ void print_regs(struct PushRegs *regs)
 	cprintf("  eax  0x%08x\n", regs->reg_eax);
 }
 
-static void trap_dispatch(struct Trapframe *tf)
+static void trap_dispatch(struct Trapframe *tf
+)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.

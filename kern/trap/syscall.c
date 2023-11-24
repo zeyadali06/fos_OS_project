@@ -268,6 +268,10 @@ void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 	return;
 }
 
+void sys_get_hard_limit(struct Env *e){
+	return e.
+}
+
 void sys_allocate_chunk(uint32 virtual_address, uint32 size, uint32 perms)
 {
 	allocate_chunk(curenv->env_page_directory, virtual_address, size, perms);
@@ -511,7 +515,9 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		// TODO: [PROJECT'23.MS1 - #4] [2] SYSTEM CALLS - Add suitable code here
 		// done added first 3 cases
 		//=====================================================================
-
+	case SYS_get_hard_limit:
+		return sys_get_hard_limit(a1)
+		break;
 	case SYS_sbrk:
 		sys_sbrk(a1);
 		return 0;
@@ -539,6 +545,7 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		break;
 	case SYS_calc_modified_frames:
 		return sys_calculate_modified_frames();
+
 		break;
 	case SYS_calc_notmod_frames:
 		return sys_calculate_notmod_frames();
