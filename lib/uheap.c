@@ -42,7 +42,7 @@ void *sbrk(int increment)
 //=================================
 void *malloc(uint32 size)
 {
-	
+
 	//==============================================================
 	// DON'T CHANGE THIS CODE========================================
 	InitializeUHeap();
@@ -66,7 +66,7 @@ void *malloc(uint32 size)
 		uint8 sizeAvailable = 1;
 		if (userPages[i].va == 0)
 		{
-			if (numOfPages > NUM_OF_UHEAP_PAGES - i)
+			if (numOfPages > (NUM_OF_UHEAP_PAGES - i))
 			{
 				return NULL;
 			}
