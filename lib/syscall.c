@@ -323,10 +323,10 @@ void *sys_sbrk(int increm)
 {
 	// Comment the following line before start coding...
 	// panic("not implemented yet");
-	
+
 	// uint32 g = syscall(SYS_sbrk, 0, 0, 0, 0, increm);
-	//cprintf("g: %d\n", g);
-	return  (void *)syscall(SYS_sbrk, increm, 0, 0, 0, 0);
+	// cprintf("g: %d\n", g);
+	return (void *)syscall(SYS_sbrk, increm, 0, 0, 0, 0);
 }
 
 void sys_free_user_mem(uint32 virtual_address, uint32 size)
@@ -343,4 +343,9 @@ void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 	// Comment the following line before start coding...
 	// panic("not implemented yet");
 	return;
+}
+
+uint32 sys_get_hard_limit(struct Env *e)
+{
+	return syscall(SYS_allocate_user_mem, (uint32)e, 0, 0, 0, 0);
 }
