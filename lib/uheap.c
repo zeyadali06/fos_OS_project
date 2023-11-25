@@ -97,7 +97,7 @@ void *malloc(uint32 size)
 				userPages[j].size = size;
 			}
 
-			sys_allocate_user_mem((hlimit + i * PAGE_SIZE), (numOfPages * PAGE_SIZE));
+			sys_allocate_user_mem((hlimit + i * PAGE_SIZE), size);
 			// cprintf("%x\n", hlimit + i * PAGE_SIZE);
 
 			return (void *)(hlimit + i * PAGE_SIZE);
@@ -135,14 +135,14 @@ void free(void *virtual_address)
 
 	for (int i = 0; i < NUM_OF_UHEAP_PAGES; i++)
 	{
-		if (userPages[i].va != userPages[i + 1].va && virtual_address == userPages[i].va)
-		{
-			size = userPages[i].size;
-			userPages[i].va = 0;
-			userPages[i].size = 0;
-			invalide = 0;
-			break;
-		}
+		// if (userPages[i].va != userPages[i + 1].va && virtual_address == userPages[i].va)
+		// {
+		// 	size = userPages[i].size;
+		// 	userPages[i].va = 0;
+		// 	userPages[i].size = 0;
+		// 	invalide = 0;
+		// 	break;
+		// }
 
 		if (virtual_address == userPages[i].va)
 		{
@@ -152,6 +152,8 @@ void free(void *virtual_address)
 			invalide = 0;
 		}
 	}
+
+	// cprintf("size: %d\n", ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
 
 	if (invalide)
 		panic("Invalid Address");

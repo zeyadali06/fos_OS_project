@@ -109,7 +109,7 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 {
 #if USE_KHEAP
 	cprintf("CURRENT WS CONTENT BEFORE CHECKING:\n");
-	env_page_ws_print(curenv);
+	// env_page_ws_print(curenv);
 	struct Env* env = curenv;
 	int WS_list_validation = 1;
 	struct WorkingSetElement* ptr_WS_element;

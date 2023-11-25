@@ -160,18 +160,39 @@ void free_user_mem(struct Env *e, uint32 virtual_address, uint32 size)
 	// Write your code here, remove the panic and write your code
 	// panic("free_user_mem() is not implemented yet...!!");
 
+	// cprintf(virtual_address);
+
+	// env_page_ws_print(e);
+
+	bool ch = 0;
 	for (int i = 0; i < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE); i++)
 	{
 		uint32 *ptrPageTable;
-		pt_set_page_permissions(e->env_page_directory, virtual_address, 0, PERM_MARKED | PERM_USER | PERM_WRITEABLE);
 
-		if (get_frame_info(e->env_page_directory, e->user_seg_brk, &ptrPageTable) != 0)
+		get_page_table(e->env_page_directory, virtual_address, &ptrPageTable);
+		// cprintf("Entry: %x    ", ptrPageTable[PTX(virtual_address)]);
+		uint32 p = ptrPageTable[PTX(virtual_address)];
+		p = p & 0xFFFFF000;
+
+		pt_set_page_permissions(e->env_page_directory, virtual_address, 0, PERM_MARKED);
+
+		struct FrameInfo *ptr = get_frame_info(e->env_page_directory, virtual_address, &ptrPageTable);
+
+		if (p != 0)
 		{
 			pf_remove_env_page(e, virtual_address);
+			unmap_frame(e->env_page_directory, virtual_address);
+			// cprintf("Enter frame info\n");
 		}
 
 		env_page_ws_invalidate(e, virtual_address);
+
+		// cprintf("%d\n", free_frame_list.size);
+
+		virtual_address += PAGE_SIZE;
 	}
+
+	// env_page_ws_print(e);
 
 	// TODO: [PROJECT'23.MS2 - BONUS#2] [2] USER HEAP - free_user_mem() IN O(1): removing page from WS List instead of searching the entire list
 }

@@ -144,7 +144,7 @@ void *alloc_block_FF(uint32 size)
 
 				if ((blkPtr->size - (size + sizeOfMetaData())) < sizeOfMetaData())
 				{
-					cprintf("----------------------------------------------------------------------\n");
+					// cprintf("----------------------------------------------------------------------\n");
 					blkPtr->is_free = 0;
 					return (blkPtr + 1);
 				}
