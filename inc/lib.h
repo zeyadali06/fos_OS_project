@@ -71,7 +71,7 @@ void* 	sys_sbrk(int increment);
 //User Heap
 void 	sys_free_user_mem(uint32 virtual_address, uint32 size);
 void	sys_allocate_user_mem(uint32 virtual_address, uint32 size);
-uint32  sys_get_hard_limit(struct Env *e);
+uint32  sys_get_hard_limit();
 
 
 void	sys_allocate_chunk(uint32 virtual_address, uint32 size, uint32 perms);
