@@ -297,9 +297,9 @@ void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 	return;
 }
 
-uint32 sys_get_hard_limit(struct Env *e)
+uint32 sys_get_hard_limit()
 {
-	return e->user_hard_limit;
+	return curenv->user_hard_limit;
 }
 
 void sys_allocate_chunk(uint32 virtual_address, uint32 size, uint32 perms)
@@ -601,7 +601,7 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		// done added first 3 cases
 		//=====================================================================
 	case SYS_get_hard_limit:
-		return sys_get_hard_limit((struct Env *)a1);
+		return sys_get_hard_limit();
 		break;
 	case SYS_sbrk:
 		return (uint32)sys_sbrk(a1);
