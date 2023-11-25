@@ -74,7 +74,7 @@ void *malloc(uint32 size)
 			}
 
 			int ind;
-			for (int j = i; j < numOfPages; j++)
+			for (int j = i; j < numOfPages + i; j++)
 			{
 				if (userPages[j].va != 0)
 				{
@@ -91,15 +91,15 @@ void *malloc(uint32 size)
 				continue;
 			}
 
-			for (int j = 0; j < numOfPages; j++)
+			for (int j = i; j < numOfPages + i; j++)
 			{
 				userPages[j].va = (void *)(hlimit + (i * PAGE_SIZE));
 				userPages[j].size = size;
 			}
 
-			
-
 			sys_allocate_user_mem((hlimit + i * PAGE_SIZE), (numOfPages * PAGE_SIZE));
+			// cprintf("%x\n", hlimit + i * PAGE_SIZE);
+
 			return (void *)(hlimit + i * PAGE_SIZE);
 		}
 
