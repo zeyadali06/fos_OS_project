@@ -58,6 +58,8 @@ void *malloc(uint32 size)
 		return alloc_block(size, DA_FF);
 	}
 
+	uint32 hlimit = USER_HEAP_START + DYN_ALLOC_MAX_SIZE + PAGE_SIZE;
+
 	int numOfPages = ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE;
 
 	// uint32 va = USER_HEAP_START;
@@ -71,11 +73,13 @@ void *malloc(uint32 size)
 				return NULL;
 			}
 
+			int ind;
 			for (int j = i; j < numOfPages; j++)
 			{
 				if (userPages[j].va != 0)
 				{
 					sizeAvailable = 0;
+					ind = j;
 					break;
 				}
 			}
@@ -83,11 +87,20 @@ void *malloc(uint32 size)
 			if (sizeAvailable == 0)
 			{
 				// va += PAGE_SIZE;
+				i += ind;
 				continue;
 			}
 
-			sys_allocate_user_mem(KERNEL_HEAP_START + i * PAGE_SIZE, numOfPages * PAGE_SIZE);
-			return (void *)(KERNEL_HEAP_START + i * PAGE_SIZE);
+			for (int j = 0; j < numOfPages; j++)
+			{
+				userPages[j].va = (void *)(hlimit + (i * PAGE_SIZE));
+				userPages[j].size = size;
+			}
+
+			
+
+			sys_allocate_user_mem((hlimit + i * PAGE_SIZE), (numOfPages * PAGE_SIZE));
+			return (void *)(hlimit + i * PAGE_SIZE);
 		}
 
 		// va += PAGE_SIZE;
