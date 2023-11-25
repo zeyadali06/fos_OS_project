@@ -533,19 +533,30 @@ void *sys_sbrk(int increment)
 	uint32 prevbrk=env->user_seg_brk;
 	if(increment>0){
 		if (env->user_seg_brk+ROUNDUP(increment,PAGE_SIZE)<=env->user_hard_limit){
-			env->user_seg_brk+=ROUNDUP(increment,PAGE_SIZE);
+			for(int i=0;i<ROUNDUP(prevbrk,PAGE_SIZE)/PAGE_SIZE;i++){
+				uint32 *pagetable;
+				if (get_page_table(env->env_page_directory,env->user_seg_brk,&pagetable)==TABLE_NOT_EXIST){
+					create_page_table(env->env_page_directory,env->user_seg_brk);
+				}
+				
+				pt_set_page_permissions(env->env_page_directory,env->user_seg_brk,PERM_MARKED|PERM_WRITEABLE|PERM_USER,0);
+				env->user_seg_brk+=PAGE_SIZE;
+			}
+			
+			
 			return (void *) prevbrk;
 		}
 		else{
 			return (void *)-1;
 		}
 	}
-
 	if(increment<0){
 		if(env->user_seg_brk-increment>=env->startOfUserHeap){
 			for (int i = 0; i < ROUNDDOWN(increment, PAGE_SIZE) / PAGE_SIZE; i++)
-			{
+			{	
+
 				 uint32 *ptrPageTable;
+				pt_set_page_permissions(env->env_page_directory,env->user_seg_brk,0,PERM_MARKED);
 				if(get_frame_info(env->env_page_directory,env->user_seg_brk,&ptrPageTable)!=0){
 				unmap_frame(ptr_page_directory, (uint32)env->user_seg_brk);
 				}
