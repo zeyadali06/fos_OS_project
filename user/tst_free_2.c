@@ -370,24 +370,24 @@ void _main(void)
 		}
 		actualSize = 3*kilo/2 ;
 
-		print_blocks_list(list);
+		// print_blocks_list(list);
 
 		//dummy allocation to consume the 1st 1.5 KB free block
 		{
 			va = malloc(actualSize);
-			cprintf("%x\n", va);
+			// cprintf("%x\n", va);
 			
 		}
 		//dummy allocation to consume the 1st 2 KB free block
 		{
 			va = malloc(actualSize);
-			cprintf("%x\n", va);
-			cprintf("va: %x\n",LIST_LAST(&list)+1);
+			// cprintf("%x\n", va);
+			// cprintf("va: %x\n",LIST_LAST(&list)+1);
 		}
 		va = malloc(actualSize);
 		// cprintf("%x\n", va);
 
-		cprintf("size: %d\n", actualSize);
+		// cprintf("size: %d\n", actualSize);
 
 		//Check returned va
 		expected = startVAs[numOfAllocs*allocCntPerSize-2];
@@ -397,7 +397,7 @@ void _main(void)
 			cprintf("test_free_2 #5.3.2: WRONG ALLOC - alloc_block_FF return wrong address. Expected %x, Actual %x\n", expected, va);
 		}
 
-		print_blocks_list(list);
+		// print_blocks_list(list);
 
 		actualSize = 3*kilo/2 ;
 		va = malloc(actualSize);

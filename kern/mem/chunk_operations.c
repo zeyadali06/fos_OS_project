@@ -164,7 +164,6 @@ void free_user_mem(struct Env *e, uint32 virtual_address, uint32 size)
 
 	// env_page_ws_print(e);
 
-	bool ch = 0;
 	for (int i = 0; i < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE); i++)
 	{
 		uint32 *ptrPageTable;
