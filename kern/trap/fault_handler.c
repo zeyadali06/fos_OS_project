@@ -131,7 +131,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 			// cprintf("2\n");
 			map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_USER | PERM_WRITEABLE);
 			frame_info_ptr->va = fault_va;
-			curenv->user_hard_limit=;
+			
 		}
 
 		if (pf_read_env_page(curenv, (void *)fault_va) == E_PAGE_NOT_EXIST_IN_PF)
