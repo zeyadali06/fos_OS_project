@@ -345,7 +345,7 @@ void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 	return;
 }
 
-uint32 sys_get_hard_limit(struct Env *e)
+uint32 sys_get_hard_limit()
 {
-	return syscall(SYS_allocate_user_mem, (uint32)e, 0, 0, 0, 0);
+	return syscall(SYS_get_hard_limit, 0, 0, 0, 0, 0);
 }
