@@ -527,46 +527,57 @@ void *sys_sbrk(int increment)
 	 * 		be that sys_sbrk returns (void*) -1 and that the segment break and the process heap are unaffected.
 	 * 		You might have to undo any operations you have done so far in this case.
 	 */
+
 	struct Env *env = curenv; // the current running Environment to adjust its break limit
-	if (increment==0)
-		return(void *) env->user_seg_brk;
-	uint32 prevbrk=env->user_seg_brk;
-	if(increment>0){
-		if (env->user_seg_brk+ROUNDUP(increment,PAGE_SIZE)<=env->user_hard_limit){
-			for(int i=0;i<ROUNDUP(prevbrk,PAGE_SIZE)/PAGE_SIZE;i++){
+
+	if (increment == 0)
+		return (void *)env->user_seg_brk;
+
+	uint32 prevbrk = env->user_seg_brk;
+
+	if (increment > 0)
+	{
+		if (env->user_seg_brk + ROUNDUP(increment, PAGE_SIZE) <= env->user_hard_limit)
+		{
+			for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
+			{
 				uint32 *pagetable;
-				if (get_page_table(env->env_page_directory,env->user_seg_brk,&pagetable)==TABLE_NOT_EXIST){
-					create_page_table(env->env_page_directory,env->user_seg_brk);
+				if (get_page_table(env->env_page_directory, env->user_seg_brk, &pagetable) == TABLE_NOT_EXIST)
+				{
+					create_page_table(env->env_page_directory, env->user_seg_brk);
 				}
-				
-				pt_set_page_permissions(env->env_page_directory,env->user_seg_brk,PERM_MARKED|PERM_WRITEABLE|PERM_USER,0);
-				env->user_seg_brk+=PAGE_SIZE;
+				pt_set_page_permissions(env->env_page_directory, env->user_seg_brk, PERM_MARKED | PERM_WRITEABLE | PERM_USER, 0);
+				env->user_seg_brk += PAGE_SIZE;
 			}
-			
-			
-			return (void *) prevbrk;
+
+			return (void *)prevbrk;
 		}
-		else{
+		else
+		{
 			return (void *)-1;
 		}
 	}
-	if(increment<0){
-		if(env->user_seg_brk-increment>=env->startOfUserHeap){
+
+	if (increment < 0)
+	{
+		if (env->user_seg_brk - increment >= env->startOfUserHeap)
+		{
 			for (int i = 0; i < ROUNDDOWN(increment, PAGE_SIZE) / PAGE_SIZE; i++)
-			{	
-
-				 uint32 *ptrPageTable;
-				pt_set_page_permissions(env->env_page_directory,env->user_seg_brk,0,PERM_MARKED);
-				if(get_frame_info(env->env_page_directory,env->user_seg_brk,&ptrPageTable)!=0){
-				unmap_frame(ptr_page_directory, (uint32)env->user_seg_brk);
+			{
+				uint32 *ptrPageTable;
+				pt_set_page_permissions(env->env_page_directory, env->user_seg_brk, 0, PERM_MARKED);
+				if (get_frame_info(env->env_page_directory, env->user_seg_brk, &ptrPageTable) != 0)
+				{
+					unmap_frame(ptr_page_directory, (uint32)env->user_seg_brk);
 				}
-
 				env->user_seg_brk -= PAGE_SIZE;
 			}
-			env->user_seg_brk=prevbrk-increment;
+
+			env->user_seg_brk = prevbrk - increment;
 			return (void *)env->user_seg_brk;
 		}
-		else{
+		else
+		{
 			return (void *)-1;
 		}
 	}
@@ -588,7 +599,7 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		// done added first 3 cases
 		//=====================================================================
 	case SYS_get_hard_limit:
-		return  sys_get_hard_limit((struct Env *)a1);
+		return sys_get_hard_limit((struct Env *)a1);
 		break;
 	case SYS_sbrk:
 		return (uint32)sys_sbrk(a1);
