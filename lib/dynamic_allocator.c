@@ -67,7 +67,7 @@ void print_blocks_list(struct MemBlock_LIST list)
 	cprintf("\nDynAlloc Blocks List:\n");
 	LIST_FOREACH(blk, &list)
 	{
-		cprintf("(size: %d, isFree: %d)\n", blk->size, blk->is_free);
+		cprintf("(size: %d, isFree: %d) pointer: %x\n", blk->size, blk->is_free, blk + 1);
 	}
 	cprintf("=========================================\n");
 }
@@ -137,37 +137,42 @@ void *alloc_block_FF(uint32 size)
 			{
 				blkPtr->is_free = 0;
 				// cprintf("%x %x %x %x\n", (void *)blkPtr, ((void *)blkPtr + sizeOfMetaData()), freeMD, size);
-				return ((void *)blkPtr + sizeOfMetaData());
+				return (blkPtr + 1);
 			}
 			else if (blkPtr->size > size + sizeOfMetaData())
 			{
+
+				if ((blkPtr->size - (size + sizeOfMetaData())) < sizeOfMetaData())
+				{
+					cprintf("----------------------------------------------------------------------\n");
+					blkPtr->is_free = 0;
+					return (blkPtr + 1);
+				}
 				struct BlockMetaData *freeMD = (struct BlockMetaData *)((void *)blkPtr + size + sizeOfMetaData());
 				freeMD->is_free = 1;
 				freeMD->size = blkPtr->size - (size + sizeOfMetaData());
-				// LIST_INSERT_AFTER(&list, blkPtr, freeMD);
-				if ((freeMD->size) < sizeOfMetaData())
-				{
-					blkPtr->size = freeMD->size;
-				}
-				else
-				{
-					blkPtr->size = 0;
-					LIST_INSERT_AFTER(&list, blkPtr, freeMD);
-				}
+				// else
+				// {
+				// 	// cprintf("----------------------------------------------------------------------");
+				// 	blkPtr->size = 0;
+				// }
 				blkPtr->is_free = 0;
-				blkPtr->size += size + sizeOfMetaData();
+				blkPtr->size = size + sizeOfMetaData();
+				LIST_INSERT_AFTER(&list, blkPtr, freeMD);
 				// cprintf("%x %x %x %x\n", (void *)blkPtr, (void *)((void *)blkPtr + sizeOfMetaData()), freeMD, size);
-				return ((void *)blkPtr + sizeOfMetaData());
+				return (blkPtr + 1);
 			}
 		}
 	}
 
 	struct BlockMetaData *lastMD = (struct BlockMetaData *)(sbrk(size + sizeOfMetaData()));
 	lastMD->is_free = 0;
-	lastMD->size = ROUNDUP(size + sizeOfMetaData(), PAGE_SIZE);
+	// lastMD->size = ROUNDUP(size + sizeOfMetaData(), PAGE_SIZE);
+	lastMD->size = size + sizeOfMetaData();
 	LIST_INSERT_TAIL(&list, lastMD);
-	free_block((void *)(lastMD + 1));
-	return alloc_block_FF(size);
+	// free_block((void *)(lastMD + 1));
+	// return alloc_block_FF(size);
+	return (void *)(lastMD + 1);
 }
 
 //=========================================

@@ -153,12 +153,25 @@ void free_user_mem(struct Env *e, uint32 virtual_address, uint32 size)
 	/*==========================================================================*/
 	// TODO: [PROJECT'23.MS2 - #12] [2] USER HEAP - free_user_mem() [Kernel Side]
 	/*REMOVE THESE LINES BEFORE START CODING */
-	inctst();
-	return;
+	// inctst();
+	// return;
 	/*==========================================================================*/
 
 	// Write your code here, remove the panic and write your code
-	panic("free_user_mem() is not implemented yet...!!");
+	// panic("free_user_mem() is not implemented yet...!!");
+
+	for (int i = 0; i < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE); i++)
+	{
+		uint32 *ptrPageTable;
+		pt_set_page_permissions(e->env_page_directory, virtual_address, 0, PERM_MARKED | PERM_USER | PERM_WRITEABLE);
+
+		if (get_frame_info(e->env_page_directory, e->user_seg_brk, &ptrPageTable) != 0)
+		{
+			pf_remove_env_page(e, virtual_address);
+		}
+
+		env_page_ws_invalidate(e, virtual_address);
+	}
 
 	// TODO: [PROJECT'23.MS2 - BONUS#2] [2] USER HEAP - free_user_mem() IN O(1): removing page from WS List instead of searching the entire list
 }
