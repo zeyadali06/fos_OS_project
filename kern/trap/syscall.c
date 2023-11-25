@@ -534,21 +534,23 @@ void *sys_sbrk(int increment)
 		return (void *)env->user_seg_brk;
 
 	uint32 prevbrk = env->user_seg_brk;
-
+	// cprintf("Enter sys_sbrk\n");
 	if (increment > 0)
 	{
 		if (env->user_seg_brk + ROUNDUP(increment, PAGE_SIZE) <= env->user_hard_limit)
 		{
-			for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
-			{
+			// for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
+			// {
+				// cprintf("Enter for loop %d\n", i);
 				uint32 *pagetable;
 				if (get_page_table(env->env_page_directory, env->user_seg_brk, &pagetable) == TABLE_NOT_EXIST)
 				{
 					create_page_table(env->env_page_directory, env->user_seg_brk);
+					// cprintf("create_page_table %d\n", i);
 				}
 				pt_set_page_permissions(env->env_page_directory, env->user_seg_brk, PERM_MARKED | PERM_WRITEABLE | PERM_USER, 0);
 				env->user_seg_brk += PAGE_SIZE;
-			}
+			// }
 
 			return (void *)prevbrk;
 		}
