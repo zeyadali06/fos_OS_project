@@ -4,12 +4,36 @@
 //============================== GIVEN FUNCTIONS ===================================//
 //==================================================================================//
 
-struct UserData
+void print_user_data()
 {
-	void *va;
-	uint32 size;
-};
-struct UserData userPages[NUM_OF_UHEAP_PAGES];
+	int tot = 0;
+	int hide = 0;
+	for (int i = 0; i < arrSize; i += 5)
+	{
+		if (userPages[i].va == 0 && userPages[i + 1].va == 0 && userPages[i + 2].va == 0 && userPages[i + 3].va == 0 && userPages[i + 4].va == 0)
+		{
+			hide++;
+		}
+		else
+		{
+			if (hide != 0)
+			{
+				cprintf("hidden: %d\n", hide * 5);
+			}
+			tot += hide;
+			hide = 0;
+			int first = ROUNDUP(userPages[i].size, PAGE_SIZE) / PAGE_SIZE;
+			int second = ROUNDUP(userPages[i + 1].size, PAGE_SIZE) / PAGE_SIZE;
+			int third = ROUNDUP(userPages[i + 2].size, PAGE_SIZE) / PAGE_SIZE;
+			int forth = ROUNDUP(userPages[i + 3].size, PAGE_SIZE) / PAGE_SIZE;
+			int fifth = ROUNDUP(userPages[i + 4].size, PAGE_SIZE) / PAGE_SIZE;
+
+			cprintf("%x %d %d | %x %d %d | %x %d %d | %x %d %d | %x %d %d\n", userPages[i].va, first, i + 1, userPages[i + 1].va, second, i + 2, userPages[i + 2].va, third, i + 3, userPages[i + 3].va, forth, i + 4, userPages[i + 4].va, fifth, i + 5);
+		}
+	}
+	cprintf("hidden: %d\n", hide * 5);
+	cprintf("Total Hiddens: %d\n", tot * 5);
+}
 
 int FirstTimeFlag = 1;
 void InitializeUHeap()
@@ -53,6 +77,11 @@ void *malloc(uint32 size)
 	// Write your code here, remove the panic and write your code
 	// panic("malloc() is not implemented yet...!!");
 
+	if (size > MAX_FREE_SPACE())
+	{
+		return NULL;
+	}
+
 	if (size <= DYN_ALLOC_MAX_BLOCK_SIZE)
 	{
 		return alloc_block(size, DA_FF);
@@ -63,31 +92,31 @@ void *malloc(uint32 size)
 	int numOfPages = ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE;
 
 	// uint32 va = USER_HEAP_START;
-	for (int i = 0; i < NUM_OF_UHEAP_PAGES; i++)
+	for (int i = 0; i < arrSize; i++)
 	{
 		uint8 sizeAvailable = 1;
 		if (userPages[i].va == 0)
 		{
-			if (numOfPages > (NUM_OF_UHEAP_PAGES - i))
+			if (numOfPages > (arrSize - i))
 			{
 				return NULL;
 			}
 
-			int ind;
 			for (int j = i; j < numOfPages + i; j++)
 			{
+				if ((hlimit + i * PAGE_SIZE) > USER_HEAP_MAX)
+				{
+					return NULL;
+				}
 				if (userPages[j].va != 0)
 				{
 					sizeAvailable = 0;
-					ind = j;
 					break;
 				}
 			}
 
 			if (sizeAvailable == 0)
 			{
-				// va += PAGE_SIZE;
-				i += ind;
 				continue;
 			}
 
@@ -98,14 +127,14 @@ void *malloc(uint32 size)
 			}
 
 			sys_allocate_user_mem((hlimit + i * PAGE_SIZE), size);
-			// cprintf("%x\n", hlimit + i * PAGE_SIZE);
 
 			return (void *)(hlimit + i * PAGE_SIZE);
 		}
 
-		// va += PAGE_SIZE;
-		// if (va >= KERNEL_HEAP_MAX)
-		// 	break;
+		if ((hlimit + i * PAGE_SIZE) > USER_HEAP_MAX)
+		{
+			return NULL;
+		}
 	}
 
 	return NULL;
@@ -127,11 +156,12 @@ void free(void *virtual_address)
 		free_block(virtual_address);
 		return;
 	}
+	// cprintf("free va: %x\n", virtual_address);
 
 	uint32 size;
 	bool invalide = 1;
 	void *oldva;
-	for (int i = 0; i < NUM_OF_UHEAP_PAGES; i++)
+	for (int i = 0; i < arrSize; i++)
 	{
 		if (virtual_address == userPages[i].va)
 		{

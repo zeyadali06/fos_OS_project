@@ -166,13 +166,20 @@ void *alloc_block_FF(uint32 size)
 	}
 
 	struct BlockMetaData *lastMD = (struct BlockMetaData *)(sbrk(size + sizeOfMetaData()));
+
+	if ((void *)lastMD == (void *)-1)
+	{
+		return NULL;
+	}
+
 	lastMD->is_free = 0;
 	// lastMD->size = ROUNDUP(size + sizeOfMetaData(), PAGE_SIZE);
-	lastMD->size = size + sizeOfMetaData();
+	// lastMD->size = size + sizeOfMetaData();
+	lastMD->size = (uint32)(sbrk(0) - (void *)lastMD);
 	LIST_INSERT_TAIL(&list, lastMD);
-	// free_block((void *)(lastMD + 1));
-	// return alloc_block_FF(size);
-	return (void *)(lastMD + 1);
+	free_block((void *)(lastMD + 1));
+	return alloc_block_FF(size);
+	// return (void *)(lastMD + 1);
 }
 
 //=========================================
