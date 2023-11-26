@@ -49,6 +49,5 @@ struct UserData
     void *va;
     uint32 size;
 };
-struct UserData userPages[arrSize];
 
 #endif
