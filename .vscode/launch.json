@@ -18,8 +18,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/fos_cygwin/FOS_CODES/FOS_PROJECT_2023_Template/lib",
-      "program": "c:/fos_cygwin/FOS_CODES/FOS_PROJECT_2023_Template/lib/build/Debug/outDebug",
+      "cwd": "c:/fos_cygwin/FOS_CODES/FOS_PROJECT_2023_Template/user",
+      "program": "c:/fos_cygwin/FOS_CODES/FOS_PROJECT_2023_Template/user/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

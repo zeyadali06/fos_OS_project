@@ -137,7 +137,7 @@ void *alloc_block_FF(uint32 size)
 			{
 				blkPtr->is_free = 0;
 				// cprintf("%x %x %x %x\n", (void *)blkPtr, ((void *)blkPtr + sizeOfMetaData()), freeMD, size);
-				return (blkPtr + 1);
+				return (void*)(blkPtr + 1);
 			}
 			else if (blkPtr->size > size + sizeOfMetaData())
 			{
@@ -146,7 +146,7 @@ void *alloc_block_FF(uint32 size)
 				{
 					// cprintf("----------------------------------------------------------------------\n");
 					blkPtr->is_free = 0;
-					return (blkPtr + 1);
+					return (void*)(blkPtr + 1);
 				}
 				struct BlockMetaData *freeMD = (struct BlockMetaData *)((void *)blkPtr + size + sizeOfMetaData());
 				freeMD->is_free = 1;
@@ -160,19 +160,55 @@ void *alloc_block_FF(uint32 size)
 				blkPtr->size = size + sizeOfMetaData();
 				LIST_INSERT_AFTER(&list, blkPtr, freeMD);
 				// cprintf("%x %x %x %x\n", (void *)blkPtr, (void *)((void *)blkPtr + sizeOfMetaData()), freeMD, size);
-				return (blkPtr + 1);
+				return (void*)(blkPtr + 1);
 			}
 		}
 	}
 
 	struct BlockMetaData *lastMD = (struct BlockMetaData *)(sbrk(size + sizeOfMetaData()));
-	lastMD->is_free = 0;
+
+	if ((void *)lastMD == (void *)-1)
+	{
+		return NULL;
+	}
+
+	lastMD->is_free = 1;
 	// lastMD->size = ROUNDUP(size + sizeOfMetaData(), PAGE_SIZE);
-	lastMD->size = size + sizeOfMetaData();
+	// lastMD->size = size + sizeOfMetaData();
+	lastMD->size = (uint32)(sbrk(0) - (void *)lastMD);
 	LIST_INSERT_TAIL(&list, lastMD);
+	if (lastMD->size == size + sizeOfMetaData())
+			{
+				lastMD->is_free = 0;
+				// cprintf("%x %x %x %x\n", (void *)blkPtr, ((void *)blkPtr + sizeOfMetaData()), freeMD, size);
+				return (void*)(lastMD + 1);
+			}
+	else if (lastMD->size > size + sizeOfMetaData())
+			{
+
+				if ((lastMD->size - (size + sizeOfMetaData())) < sizeOfMetaData())
+				{
+					// cprintf("----------------------------------------------------------------------\n");
+					lastMD->is_free = 0;
+					return (void*)(lastMD + 1);
+				}
+				struct BlockMetaData *freeMD = (struct BlockMetaData *)((void *)lastMD + size + sizeOfMetaData());
+				freeMD->is_free = 1;
+				freeMD->size = lastMD->size - (size + sizeOfMetaData());
+				// else
+				// {
+				// 	// cprintf("----------------------------------------------------------------------");
+				// 	blkPtr->size = 0;
+				// }
+				lastMD->is_free = 0;
+				lastMD->size = size + sizeOfMetaData();
+				LIST_INSERT_AFTER(&list, lastMD, freeMD);
+				// cprintf("%x %x %x %x\n", (void *)blkPtr, (void *)((void *)blkPtr + sizeOfMetaData()), freeMD, size);
+				return (void*)(lastMD + 1);
+			}
 	// free_block((void *)(lastMD + 1));
-	// return alloc_block_FF(size);
-	return (void *)(lastMD + 1);
+	return alloc_block_FF(size);
+	// return (void *)(lastMD + 1);
 }
 
 //=========================================

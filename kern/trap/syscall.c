@@ -537,7 +537,7 @@ void *sys_sbrk(int increment)
 	// cprintf("Enter sys_sbrk\n");
 	if (increment > 0)
 	{
-		if (env->user_seg_brk + ROUNDUP(increment, PAGE_SIZE) <= env->user_hard_limit)
+		if ( ROUNDUP(env->user_seg_brk+increment, PAGE_SIZE) <= env->user_hard_limit)
 		{
 			// for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
 			// {
@@ -549,7 +549,7 @@ void *sys_sbrk(int increment)
 					// cprintf("create_page_table %d\n", i);
 				}
 				pt_set_page_permissions(env->env_page_directory, env->user_seg_brk, PERM_MARKED | PERM_WRITEABLE | PERM_USER, 0);
-				env->user_seg_brk += PAGE_SIZE;
+				env->user_seg_brk = ROUNDUP(env->user_seg_brk+increment, PAGE_SIZE);
 			// }
 
 			return (void *)prevbrk;

@@ -71,12 +71,11 @@ void *sbrk(int increment)
 	{
 		// cprintf("\n%x\n", increment);
 		// cprintf("%x %x %x %d\n", brk + ROUNDUP(increment, PAGE_SIZE), rlimit, ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE, free_frame_list.size);
-		if (brk + ROUNDUP(increment, PAGE_SIZE) <= rlimit && (ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE) <= free_frame_list.size)
+		if ( ROUNDUP(brk +increment, PAGE_SIZE) <= rlimit )
 		{
 			// cprintf("%d\n", increment);
 			uint32 prevBrk = (uint32)brk;
-			for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
-			{
+			
 				// cprintf("ok\n");
 				struct FrameInfo *ptr;
 				if (allocate_frame(&ptr) == 0)
@@ -86,8 +85,8 @@ void *sbrk(int increment)
 					ptr->va = (uint32)brk & 0xFFFFF000;
 				}
 				// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE));
-				brk += PAGE_SIZE;
-			}
+				brk =ROUNDUP(brk +increment, PAGE_SIZE);
+			
 			return (void *)prevBrk;
 		}
 		else
