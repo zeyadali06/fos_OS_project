@@ -88,7 +88,6 @@ void _main(void)
 			//break;
 		}
 	}
-	// print_blocks_list(list);
 
 	freeFrames = sys_calculate_free_frames() ;
 
@@ -157,9 +156,6 @@ void _main(void)
 		//Free last block (coalesce with previous)
 		blockIndex = numOfAllocs*allocCntPerSize-1;
 		free(startVAs[blockIndex]);
-
-		// print_blocks_list(list);
-		
 		block_size = get_block_size(startVAs[blockIndex-1]) ;
 		expectedSize = 2*allocSizes[numOfAllocs-1];
 		if (block_size != expectedSize)
@@ -301,7 +297,7 @@ void _main(void)
 			eval += 20;
 		}
 	}
-	// print_blocks_list(list);
+
 
 	//====================================================================//
 	/*Allocate After Free Scenarios */
@@ -370,25 +366,15 @@ void _main(void)
 		}
 		actualSize = 3*kilo/2 ;
 
-		// print_blocks_list(list);
-
 		//dummy allocation to consume the 1st 1.5 KB free block
 		{
 			va = malloc(actualSize);
-			// cprintf("%x\n", va);
-			
 		}
 		//dummy allocation to consume the 1st 2 KB free block
 		{
 			va = malloc(actualSize);
-			// cprintf("%x\n", va);
-			// cprintf("va: %x\n",LIST_LAST(&list)+1);
 		}
 		va = malloc(actualSize);
-		// cprintf("%x\n", va);
-
-		// cprintf("size: %d\n", actualSize);
-
 		//Check returned va
 		expected = startVAs[numOfAllocs*allocCntPerSize-2];
 		if(va == NULL || (va != expected))
@@ -396,8 +382,6 @@ void _main(void)
 			is_correct = 0;
 			cprintf("test_free_2 #5.3.2: WRONG ALLOC - alloc_block_FF return wrong address. Expected %x, Actual %x\n", expected, va);
 		}
-
-		// print_blocks_list(list);
 
 		actualSize = 3*kilo/2 ;
 		va = malloc(actualSize);

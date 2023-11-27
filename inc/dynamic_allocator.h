@@ -20,7 +20,6 @@ enum
 
 LIST_HEAD(MemBlock_LIST, BlockMetaData);
 struct MemBlock_LIST list;
-struct MemBlock_LIST freelist;
 struct BlockMetaData
 {
 	uint32 size;   // block size (including size of its meta data)

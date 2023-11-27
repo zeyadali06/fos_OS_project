@@ -74,7 +74,6 @@ void _main(void)
 		{
 			freeFrames = sys_calculate_free_frames() ;
 			usedDiskPages = sys_pf_calculate_allocated_pages() ;
-			
 			free(ptr_allocations[0]);
 
 			if ((usedDiskPages - sys_pf_calculate_allocated_pages()) != 0) panic("Wrong free: Extra or less pages are removed from PageFile");

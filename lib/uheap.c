@@ -78,7 +78,7 @@ void *malloc(uint32 size)
 	// TODO: [PROJECT'23.MS2 - #09] [2] USER HEAP - malloc() [User Side]
 	// Write your code here, remove the panic and write your code
 	// panic("malloc() is not implemented yet...!!");
-	
+
 	if (size <= DYN_ALLOC_MAX_BLOCK_SIZE)
 	{
 		return alloc_block(size, DA_FF);
@@ -88,8 +88,6 @@ void *malloc(uint32 size)
 	{
 		return NULL;
 	}
-
-	
 
 	uint32 hlimit = sys_get_hard_limit() + PAGE_SIZE;
 
@@ -106,6 +104,7 @@ void *malloc(uint32 size)
 				return NULL;
 			}
 
+			int index;
 			for (int j = i; j < numOfPages + i; j++)
 			{
 				if ((hlimit + i * PAGE_SIZE) > USER_HEAP_MAX)
@@ -114,6 +113,7 @@ void *malloc(uint32 size)
 				}
 				if (userPages[j].va != 0)
 				{
+					index = j - i;
 					sizeAvailable = 0;
 					break;
 				}
@@ -121,6 +121,7 @@ void *malloc(uint32 size)
 
 			if (sizeAvailable == 0)
 			{
+				i += index;
 				continue;
 			}
 

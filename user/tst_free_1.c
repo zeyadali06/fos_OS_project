@@ -214,9 +214,8 @@ void _main(void)
 		{
 			freeFrames = sys_calculate_free_frames() ;
 			usedDiskPages = sys_pf_calculate_allocated_pages() ;
-			cprintf("%d %x\n", freeFrames, ptr_allocations[0]);
 			free(ptr_allocations[0]);
-			cprintf("%d\n", sys_calculate_free_frames());
+
 			if ((usedDiskPages - sys_pf_calculate_allocated_pages()) != 0) panic("Wrong free: Extra or less pages are removed from PageFile");
 			if ((sys_calculate_free_frames() - freeFrames) != 2 ) panic("Wrong free: WS pages in memory and/or page tables are not freed correctly");
 			uint32 notExpectedVAs[2] = { ROUNDDOWN((uint32)(&(byteArr[0])), PAGE_SIZE), ROUNDDOWN((uint32)(&(byteArr[lastIndexOfByte])), PAGE_SIZE)} ;
@@ -281,7 +280,7 @@ void _main(void)
 			chk = sys_check_WS_list(notExpectedVAs, 2, 0, 3);
 			if (chk != 1) panic("free: page is not removed from WS");
 		}
-		// cprintf("ok\n");
+
 		//Free 2nd 3 KB
 		{
 			freeFrames = sys_calculate_free_frames() ;
@@ -290,7 +289,6 @@ void _main(void)
 			if ((usedDiskPages - sys_pf_calculate_allocated_pages()) != 0) panic("Wrong free: Extra or less pages are removed from PageFile");
 			if ((sys_calculate_free_frames() - freeFrames) != 0) panic("Wrong free: WS pages in memory and/or page tables are not freed correctly");
 		}
-		// cprintf("ok\n");
 
 		//Free last 14 KB
 		{
@@ -304,7 +302,6 @@ void _main(void)
 			if (chk != 1) panic("free: page is not removed from WS");
 		}
 	}
-	// cprintf("ok\n");
 
 	//Test accessing a freed area (processes should be killed by the validation of the fault handler)
 	{

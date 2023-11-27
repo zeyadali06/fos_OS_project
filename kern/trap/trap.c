@@ -385,8 +385,7 @@ void fault_handler(struct Trapframe *tf)
 			// cprintf("ok1\n");
 			// uint32 *ptrPage;
 			// get_page_table(curenv->env_page_directory, fault_va, &ptrPage);
-			uint32 *ptr_page_table;
-			if (!(perms & PERM_WRITEABLE) && (get_frame_info(curenv->env_page_directory, fault_va, &ptr_page_table) != 0))
+			if (!(perms & PERM_WRITEABLE) && (perms & PERM_PRESENT))
 			{
 				// cprintf("ok\n");
 				sched_kill_env(faulted_env->env_id);

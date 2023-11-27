@@ -537,19 +537,19 @@ void *sys_sbrk(int increment)
 	// cprintf("Enter sys_sbrk\n");
 	if (increment > 0)
 	{
-		if ( ROUNDUP(env->user_seg_brk+increment, PAGE_SIZE) <= env->user_hard_limit)
+		if (ROUNDUP(env->user_seg_brk + increment, PAGE_SIZE) <= env->user_hard_limit)
 		{
 			// for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
 			// {
-				// cprintf("Enter for loop %d\n", i);
-				uint32 *pagetable;
-				if (get_page_table(env->env_page_directory, env->user_seg_brk, &pagetable) == TABLE_NOT_EXIST)
-				{
-					create_page_table(env->env_page_directory, env->user_seg_brk);
-					// cprintf("create_page_table %d\n", i);
-				}
-				pt_set_page_permissions(env->env_page_directory, env->user_seg_brk, PERM_MARKED | PERM_WRITEABLE | PERM_USER, 0);
-				env->user_seg_brk = ROUNDUP(env->user_seg_brk+increment, PAGE_SIZE);
+			// cprintf("Enter for loop %d\n", i);
+			uint32 *pagetable;
+			if (get_page_table(env->env_page_directory, env->user_seg_brk, &pagetable) == TABLE_NOT_EXIST)
+			{
+				create_page_table(env->env_page_directory, env->user_seg_brk);
+				// cprintf("create_page_table %d\n", i);
+			}
+			pt_set_page_permissions(env->env_page_directory, env->user_seg_brk, PERM_MARKED | PERM_WRITEABLE | PERM_USER, 0);
+			env->user_seg_brk = ROUNDUP(env->user_seg_brk + increment, PAGE_SIZE);
 			// }
 
 			return (void *)prevbrk;
@@ -562,20 +562,19 @@ void *sys_sbrk(int increment)
 
 	if (increment < 0)
 	{
+		increment *= -1;
 		if (env->user_seg_brk - increment >= env->startOfUserHeap)
 		{
-			for (int i = 0; i < ROUNDDOWN(increment, PAGE_SIZE) / PAGE_SIZE; i++)
-			{
-				uint32 *ptrPageTable;
-				pt_set_page_permissions(env->env_page_directory, env->user_seg_brk, 0, PERM_MARKED);
-				if (get_frame_info(env->env_page_directory, env->user_seg_brk, &ptrPageTable) != 0)
-				{
-					unmap_frame(ptr_page_directory, (uint32)env->user_seg_brk);
-				}
-				env->user_seg_brk -= PAGE_SIZE;
-			}
 
-			env->user_seg_brk = prevbrk - increment;
+			uint32 *ptrPageTable;
+			if (get_frame_info(env->env_page_directory, env->user_seg_brk, &ptrPageTable) != 0 && (ROUNDDOWN(env->user_seg_brk - increment, PAGE_SIZE) < ROUNDDOWN(env->user_seg_brk, PAGE_SIZE)))
+			{
+				pt_set_page_permissions(env->env_page_directory, env->user_seg_brk, 0, PERM_MARKED);
+				unmap_frame(ptr_page_directory, (uint32)env->user_seg_brk);
+			}
+			// env->user_seg_brk -= PAGE_SIZE;
+
+			env->user_seg_brk -= increment;
 			return (void *)env->user_seg_brk;
 		}
 		else
