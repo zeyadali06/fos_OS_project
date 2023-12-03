@@ -570,7 +570,7 @@ void *sys_sbrk(int increment)
 			if (get_frame_info(env->env_page_directory, env->user_seg_brk, &ptrPageTable) != 0 && (ROUNDDOWN(env->user_seg_brk - increment, PAGE_SIZE) < ROUNDDOWN(env->user_seg_brk, PAGE_SIZE)))
 			{
 				pt_set_page_permissions(env->env_page_directory, env->user_seg_brk, 0, PERM_MARKED);
-				unmap_frame(ptr_page_directory, (uint32)env->user_seg_brk);
+				unmap_frame(env->env_page_directory, (uint32)env->user_seg_brk);
 			}
 			// env->user_seg_brk -= PAGE_SIZE;
 

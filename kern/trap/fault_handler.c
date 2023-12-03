@@ -111,7 +111,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 	int iWS = curenv->page_last_WS_index;
 	uint32 wsSize = env_page_ws_get_size(curenv);
 #endif
-	
+
 	// cprintf("Enter\n");
 	if (wsSize < (curenv->page_WS_max_size))
 	{
@@ -131,7 +131,6 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 			// cprintf("2\n");
 			map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_USER | PERM_WRITEABLE);
 			frame_info_ptr->va = fault_va;
-			
 		}
 
 		if (pf_read_env_page(curenv, (void *)fault_va) == E_PAGE_NOT_EXIST_IN_PF)
@@ -176,9 +175,87 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 		// refer to the project presentation and documentation for details
 		if (isPageReplacmentAlgorithmFIFO())
 		{
+			fault_va &= 0xFFFFF000;
+			cprintf("--------------------------------------------------\n");
+			cprintf("va: %x\n", fault_va);
 			// TODO: [PROJECT'23.MS3 - #1] [1] PAGE FAULT HANDLER - FIFO Replacement
 			//  Write your code here, remove the panic and write your code
-			panic("page_fault_handler() FIFO Replacement is not implemented yet...!!");
+			// panic("page_fault_handler() FIFO Replacement is not implemented yet...!!");
+
+			// uint32 *ptrPage;
+			// struct FrameInfo *frame = get_frame_info(curenv->env_page_directory, fault_va, &ptrPage);
+
+			// cprintf("%d\n", calculate_available_frames().freeBuffered + calculate_available_frames().freeNotBuffered);
+
+			// frame = get_frame_info(curenv->env_page_directory, fault_va, &ptrPage);
+			// cprintf("frame: %x, page table: %x\n", frame, ptrPage);
+
+			struct FrameInfo *ptrFrame = NULL;
+			if (allocate_frame(&ptrFrame) == 0)
+			{
+				map_frame(curenv->env_page_directory, ptrFrame, fault_va, PERM_USER | PERM_MARKED | PERM_WRITEABLE);
+				ptrFrame->va = fault_va;
+			}
+
+			uint32 *ptrPage;
+			// if (get_page_table(curenv->env_page_directory, fault_va, &ptrPage) == TABLE_NOT_EXIST)
+			// {
+
+			int ret = pf_read_env_page(curenv, (void *)fault_va);
+
+			// if (pf_read_env_page(curenv, (void *)fault_va) == E_PAGE_NOT_EXIST_IN_PF)
+			// {
+			// 	cprintf("before   E_PAGE_NOT_EXIST_IN_PF\n");
+			// 	// pf_add_empty_env_page(curenv, fault_va, 1);
+			// 	// pf_update_env_page(curenv, fault_va, ptrFrame);
+			// 	cprintf("after    E_PAGE_NOT_EXIST_IN_PF\n");
+			// }
+
+			// }
+
+			struct FrameInfo *frame = get_frame_info(curenv->env_page_directory, fault_va, &ptrPage);
+
+			cprintf("frame: %x, page table: %x, entry: %x\n", frame, ptrPage, ptrPage[PTX(fault_va)]);
+
+			uint32 deleted;
+			struct FrameInfo *deletedFrame;
+
+			if (LIST_NEXT(curenv->page_last_WS_element) != NULL)
+			{
+				cprintf("Enter != NULL\n");
+				struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+				deleted = curenv->page_last_WS_element->virtual_address;
+				deletedFrame = get_frame_info(curenv->env_page_directory, fault_va, &ptrPage);
+				curenv->page_last_WS_element = LIST_NEXT(curenv->page_last_WS_element);
+				struct WorkingSetElement *e = LIST_PREV(curenv->page_last_WS_element);
+				LIST_REMOVE(&(curenv->page_WS_list), e);
+				LIST_INSERT_BEFORE(&(curenv->page_WS_list), curenv->page_last_WS_element, ele);
+				cprintf("Quit != NULL\n");
+			}
+			else
+			{
+				cprintf("Enter == NULL\n");
+				struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+				deleted = curenv->page_last_WS_element->virtual_address;
+				deletedFrame = get_frame_info(curenv->env_page_directory, fault_va, &ptrPage);
+				curenv->page_last_WS_element = LIST_PREV(curenv->page_last_WS_element);
+				struct WorkingSetElement *e = LIST_NEXT(curenv->page_last_WS_element);
+				LIST_REMOVE(&(curenv->page_WS_list), e);
+				LIST_INSERT_AFTER(&(curenv->page_WS_list), curenv->page_last_WS_element, ele);
+				curenv->page_last_WS_element = LIST_FIRST(&(curenv->page_WS_list));
+				cprintf("Quit == NULL\n");
+			}
+
+			free_frame(deletedFrame);
+			env_page_ws_print(curenv);
+
+			// if (ret == E_PAGE_NOT_EXIST_IN_PF)
+			// {
+			// 	pf_add_empty_env_page(curenv, fault_va, 1);
+			// }
+
+			// unmap_frame(curenv->env_page_directory, deleted);
+			cprintf("--------------------------------------------------\n");
 		}
 		if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
 		{
