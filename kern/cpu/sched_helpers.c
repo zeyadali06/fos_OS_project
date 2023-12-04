@@ -554,7 +554,8 @@ return e->nice;
 }
 void env_set_nice(struct Env* e, int nice_value)
 {
-	cprintf("set\n");
+	// e->nice= nice_value;
+	e->priority=PRI_MAX -(e->recent/4)-(nice_value*2);
 	e->nice= nice_value;
 	//TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - env_set_nice
 	//Your code is here
@@ -562,9 +563,16 @@ void env_set_nice(struct Env* e, int nice_value)
 	
 }
 int env_get_recent_cpu(struct Env* e)
-{
-	cprintf("get rec\n");
-	return e->recent;
+{   
+	
+	uint32 res = 100* e->recent;
+	if(res>0)
+	return res+FIX_F/2 ;
+	else if(res<0)
+	return res-FIX_F/2;
+	else 
+	return 0;
+	// return e->recent;
 	//TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - env_get_recent_cpu
 	//Your code is here
 	//Comment the following line
@@ -574,8 +582,14 @@ int env_get_recent_cpu(struct Env* e)
 int get_load_average()
 {
 	
-	cprintf("load\n");
-	return loadavg ;
+	uint32 avg = 100* loadavg;
+	if(avg>0)
+	return avg+FIX_F/2 ;
+	if(avg<0)
+	return avg-FIX_F/2;
+	else 
+	return 0;
+	// return loadavg ;
 	//TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - get_load_average
 	//Your code is here
 	// //Comment the following line
