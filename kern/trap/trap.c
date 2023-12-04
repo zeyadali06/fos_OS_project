@@ -366,7 +366,7 @@ void fault_handler(struct Trapframe *tf)
 		if (userTrap)
 		{ // faulted info
 			int perms = pt_get_page_permissions(faulted_env->env_page_directory, fault_va);
-			cprintf("fault_va: %x\n", fault_va);
+			// cprintf("fault_va: %x\n", fault_va);
 
 			if ((uint32)fault_va > USER_LIMIT)
 			{
