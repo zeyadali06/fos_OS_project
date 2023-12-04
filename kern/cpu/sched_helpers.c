@@ -563,12 +563,12 @@ void env_set_nice(struct Env* e, int nice_value)
 }
 int env_get_recent_cpu(struct Env* e)
 {   
+	uint32 conv = e->recent * FIX_F;
 	
-	uint32 res = 100* e->recent;
-	if(res>0)
-	return res+FIX_F/2 ;
-	else if(res<0)
-	return res-FIX_F/2;
+	if(conv>0)
+	return 100* (conv+FIX_F/2)/FIX_F ;
+	else if(conv<0)
+	return 100* (conv-FIX_F/2)/FIX_F;
 	else 
 	return 0;
 	// return e->recent;
@@ -581,11 +581,12 @@ int env_get_recent_cpu(struct Env* e)
 int get_load_average()
 {
 	
-	uint32 avg = 100* loadavg;
-	if(avg>0)
-	return avg+FIX_F/2 ;
-	if(avg<0)
-	return avg-FIX_F/2;
+	uint32 avgconv = loadavg * FIX_F;
+	
+	if(avgconv>0)
+	return 100* (avgconv+FIX_F/2)/FIX_F ;
+	else if(avgconv<0)
+	return 100* (avgconv-FIX_F/2)/FIX_F;
 	else 
 	return 0;
 	// return loadavg ;
