@@ -566,9 +566,9 @@ int env_get_recent_cpu(struct Env* e)
 	uint32 conv = e->recent * FIX_F;
 	
 	if(conv>0)
-	return 100* (conv+FIX_F/2)/FIX_F ;
+	return 100* ((conv+FIX_F/2)/FIX_F) ;
 	else if(conv<0)
-	return 100* (conv-FIX_F/2)/FIX_F;
+	return 100* ((conv-FIX_F/2)/FIX_F);
 	else 
 	return 0;
 	// return e->recent;
@@ -584,9 +584,9 @@ int get_load_average()
 	uint32 avgconv = loadavg * FIX_F;
 	
 	if(avgconv>0)
-	return 100* (avgconv+FIX_F/2)/FIX_F ;
+	return 100* ((avgconv+FIX_F/2)/FIX_F) ;
 	else if(avgconv<0)
-	return 100* (avgconv-FIX_F/2)/FIX_F;
+	return 100* ((avgconv-FIX_F/2)/FIX_F);
 	else 
 	return 0;
 	// return loadavg ;
