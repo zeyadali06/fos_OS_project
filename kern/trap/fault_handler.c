@@ -114,6 +114,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 cprintf("s\n");
 	if (isPageReplacmentAlgorithmFIFO())
 	{
+		
 		cprintf("fifo");
 		if (wsSize < (curenv->page_WS_max_size))
 		{
