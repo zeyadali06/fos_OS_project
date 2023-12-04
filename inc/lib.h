@@ -72,7 +72,7 @@ void* 	sys_sbrk(int increment);
 void 	sys_free_user_mem(uint32 virtual_address, uint32 size);
 void	sys_allocate_user_mem(uint32 virtual_address, uint32 size);
 uint32  sys_get_hard_limit();
-
+void sys_env_set_nice(struct Env *e ,int nice );
 
 void	sys_allocate_chunk(uint32 virtual_address, uint32 size, uint32 perms);
 void 	sys_move_user_mem(uint32 src_virtual_address, uint32 dst_virtual_address, uint32 size);
