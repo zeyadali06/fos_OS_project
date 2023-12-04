@@ -111,64 +111,113 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 	int iWS = curenv->page_last_WS_index;
 	uint32 wsSize = env_page_ws_get_size(curenv);
 #endif
-	
-	// cprintf("Enter\n");
-	if (wsSize < (curenv->page_WS_max_size))
+
+	if (isPageReplacmentAlgorithmFIFO())
 	{
-		// cprintf("1");
-		// cprintf("PLACEMENT=========================WS Size = %d\n", wsSize );
-		// TODO: [PROJECT'23.MS2 - #15] [3] PAGE FAULT HANDLER - Placement
-		//  Write your code here, remove the panic and write your code
-		// panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
-
-		// cprintf("sizebefore:%d\n", pf_calculate_allocated_pages(curenv));
-
-		struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
-		struct FrameInfo *frame_info_ptr;
-
-		if (allocate_frame(&frame_info_ptr) == 0)
+		if (wsSize < (curenv->page_WS_max_size))
 		{
-			// cprintf("2\n");
-			map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_USER | PERM_WRITEABLE);
-			frame_info_ptr->va = fault_va;
-			
-		}
+			// cprintf("1");
+			// cprintf("PLACEMENT=========================WS Size = %d\n", wsSize );
+			// TODO: [PROJECT'23.MS2 - #15] [3] PAGE FAULT HANDLER - Placement
+			//  Write your code here, remove the panic and write your code
+			// panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
 
-		if (pf_read_env_page(curenv, (void *)fault_va) == E_PAGE_NOT_EXIST_IN_PF)
-		{
-			// cprintf("fault_va: %x  %x  %x  %x  %x  \n", fault_va,USTACKBOTTOM,USTACKTOP, USER_HEAP_START,USER_HEAP_MAX);
+			// cprintf("sizebefore:%d\n", pf_calculate_allocated_pages(curenv));
 
-			if ((fault_va <= USTACKTOP && fault_va >= USTACKBOTTOM) || (fault_va <= USER_HEAP_MAX && fault_va >= USER_HEAP_START))
+			struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+			struct FrameInfo *frame_info_ptr;
+
+			if (allocate_frame(&frame_info_ptr) == 0)
 			{
-				// cprintf("4");
-				// cprintf("USTACKTOP\n");
-				// if (pf_add_empty_env_page(curenv, fault_va, 0) == E_NO_PAGE_FILE_SPACE)
-				// 	panic("ERROR: No enough virtual space on the page file");
-
-				LIST_INSERT_TAIL(&(curenv->page_WS_list), ele);
-				if (curenv->page_WS_max_size == (LIST_SIZE(&(curenv->page_WS_list))))
-				{
-					// cprintf("5");
-					curenv->page_last_WS_element = LIST_FIRST(&(curenv->page_WS_list));
-				}
-				// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, 0, NULL));
-				// pf_add_empty_env_page(curenv, fault_va, 1);
-
-				// cprintf("sizeafter:%d, maxSize:%d\n", LIST_SIZE(&(curenv->page_WS_list)), curenv->page_WS_max_size);
+				// cprintf("2\n");
+				map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_USER | PERM_WRITEABLE);
+				frame_info_ptr->va = fault_va;
 			}
+
+			if (pf_read_env_page(curenv, (void *)fault_va) == E_PAGE_NOT_EXIST_IN_PF)
+			{
+				// cprintf("fault_va: %x  %x  %x  %x  %x  \n", fault_va,USTACKBOTTOM,USTACKTOP, USER_HEAP_START,USER_HEAP_MAX);
+
+				if ((fault_va <= USTACKTOP && fault_va >= USTACKBOTTOM) || (fault_va <= USER_HEAP_MAX && fault_va >= USER_HEAP_START))
+				{
+					// cprintf("4");
+					// cprintf("USTACKTOP\n");
+					// if (pf_add_empty_env_page(curenv, fault_va, 0) == E_NO_PAGE_FILE_SPACE)
+					// 	panic("ERROR: No enough virtual space on the page file");
+
+					LIST_INSERT_TAIL(&(curenv->page_WS_list), ele);
+					if (curenv->page_WS_max_size == (LIST_SIZE(&(curenv->page_WS_list))))
+					{
+						// cprintf("5");
+						curenv->page_last_WS_element = LIST_FIRST(&(curenv->page_WS_list));
+					}
+					// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, 0, NULL));
+					// pf_add_empty_env_page(curenv, fault_va, 1);
+
+					// cprintf("sizeafter:%d, maxSize:%d\n", LIST_SIZE(&(curenv->page_WS_list)), curenv->page_WS_max_size);
+				}
+				else
+				{
+					// cprintf("6");
+					// cprintf("Kill\n");
+					sched_kill_env(curenv->env_id);
+					return;
+				}
+			}
+
+			// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, fault_va, NULL));
+
+			// refer to the project presentation and documentation for details
+		}
+	}
+
+	else if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
+	{
+
+		cprintf("algoLRU");
+		uint32 activeListSize = LIST_SIZE(&(curenv->ActiveList));
+		uint32 secondListSize = LIST_SIZE(&(curenv->SecondList));
+		// uint32 wsMS = LIST_SIZE(&(curenv->page_WS_max_size));
+
+		if ((activeListSize + secondListSize) < curenv->page_WS_max_size)
+		{
+			cprintf("after if ");
+			struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+
+			if (activeListSize < curenv->ActiveListSize)
+				if (activeListSize == 0)
+				{
+					LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+					LIST_INSERT_TAIL(&(curenv->ActiveList), ele);
+				}
+				else
+				{
+
+					LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+				}
 			else
 			{
-				// cprintf("6");
-				// cprintf("Kill\n");
-				sched_kill_env(curenv->env_id);
-				return;
+				struct WorkingSetElement *firstSecondEle = LIST_LAST(&(curenv->ActiveList));
+				struct WorkingSetElement *lastActiveEle = LIST_LAST(&(curenv->ActiveList));
+
+				if (secondListSize == 0)
+				{
+
+					LIST_INSERT_HEAD(&(curenv->SecondList), firstSecondEle);
+					LIST_INSERT_TAIL(&(curenv->SecondList), firstSecondEle);
+				}
+				else
+				{
+
+					LIST_INSERT_HEAD(&(curenv->SecondList), firstSecondEle);
+				}
+				LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+
+				LIST_REMOVE(&(curenv->ActiveList), lastActiveEle);
 			}
 		}
-
-		// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, fault_va, NULL));
-
-		// refer to the project presentation and documentation for details
 	}
+
 	else
 	{
 		// cprintf("7");
