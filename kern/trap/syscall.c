@@ -570,11 +570,32 @@ void *sys_sbrk(int increment)
 			if (get_frame_info(env->env_page_directory, env->user_seg_brk, &ptrPageTable) != 0 && (ROUNDDOWN(env->user_seg_brk - increment, PAGE_SIZE) < ROUNDDOWN(env->user_seg_brk, PAGE_SIZE)))
 			{
 				pt_set_page_permissions(env->env_page_directory, env->user_seg_brk, 0, PERM_MARKED);
-				unmap_frame(ptr_page_directory, (uint32)env->user_seg_brk);
+				unmap_frame(env->env_page_directory, (uint32)env->user_seg_brk);
+
+				env_page_ws_invalidate(curenv, (ROUNDDOWN(env->user_seg_brk - increment, PAGE_SIZE)));
+
+				struct WorkingSetElement *curWS;
+				struct WorkingSetElement *firstele;
+				struct WorkingSetElement *secondele;
+
+				LIST_FOREACH(curWS, &(curenv->page_WS_list))
+				{
+					firstele = curWS;
+					secondele = curWS;
+
+					// cprintf("Enter\n");
+					if (curWS == curenv->page_last_WS_element)
+					{
+						break;
+					}
+					LIST_REMOVE(&(curenv->page_WS_list), firstele);
+					LIST_INSERT_TAIL(&(curenv->page_WS_list), secondele);
+				}
 			}
 			// env->user_seg_brk -= PAGE_SIZE;
 
 			env->user_seg_brk -= increment;
+
 			return (void *)env->user_seg_brk;
 		}
 		else

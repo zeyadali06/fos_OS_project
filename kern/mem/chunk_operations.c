@@ -186,9 +186,34 @@ void free_user_mem(struct Env *e, uint32 virtual_address, uint32 size)
 
 		env_page_ws_invalidate(e, virtual_address);
 
+		// cprintf("va= %x\n", virtual_address);
+
 		// cprintf("%d\n", free_frame_list.size);
 
 		virtual_address += PAGE_SIZE;
+	}
+
+	struct WorkingSetElement *curWS;
+	struct WorkingSetElement *firstele;
+	struct WorkingSetElement *secondele;
+
+	LIST_FOREACH(curWS, &(e->page_WS_list))
+	{
+		firstele = curWS;
+		secondele = curWS;
+
+		// cprintf("Enter\n");
+		if (curWS == e->page_last_WS_element)
+		{
+			break;
+		}
+		LIST_REMOVE(&(e->page_WS_list), firstele);
+		LIST_INSERT_TAIL(&(e->page_WS_list), secondele);
+
+		// cprintf("%x %x\n", curWS->virtual_address, LIST_LAST(&(e->page_WS_list))->virtual_address);
+		// cprintf("%x %x\n", curWS, LIST_LAST(&(e->page_WS_list)));
+		// cprintf("%x\n", LIST_NEXT(curWS));
+		// curWS = LIST_NEXT(curWS);
 	}
 
 	// env_page_ws_print(e);
