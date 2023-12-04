@@ -111,9 +111,10 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 	int iWS = curenv->page_last_WS_index;
 	uint32 wsSize = env_page_ws_get_size(curenv);
 #endif
-
+cprintf("s\n");
 	if (isPageReplacmentAlgorithmFIFO())
 	{
+		cprintf("fifo");
 		if (wsSize < (curenv->page_WS_max_size))
 		{
 			// cprintf("1");
@@ -169,43 +170,44 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 
 			// refer to the project presentation and documentation for details
 		}
+		else{
+			panic("page_fault_handler() FIFO Replacement is not implemented yet...!!");
+		}
 	}
-
-	else if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
+	 if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
 	{
-
-		cprintf("algoLRU");
+		cprintf("algoLRU\n");
 		uint32 activeListSize = LIST_SIZE(&(curenv->ActiveList));
 		uint32 secondListSize = LIST_SIZE(&(curenv->SecondList));
 		// uint32 wsMS = LIST_SIZE(&(curenv->page_WS_max_size));
-
-		if ((activeListSize + secondListSize) < curenv->page_WS_max_size)
-		{
-			cprintf("after if ");
-			struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
 				struct FrameInfo *frame_info_ptr;
-
 			if (allocate_frame(&frame_info_ptr) == 0)
 			{
 				// cprintf("2\n");
 				map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_USER | PERM_WRITEABLE);
 				frame_info_ptr->va = fault_va;
 			}
-
-
+		if ((activeListSize + secondListSize) < curenv->page_WS_max_size)
+		{
+			cprintf("after if\n ");
+			struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+				cprintf("%d  %d \n",activeListSize,curenv->ActiveListSize);
 			if (activeListSize < curenv->ActiveListSize)
 				if (activeListSize == 0)
 				{
+					cprintf("firstadd");
 					LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
 					LIST_INSERT_TAIL(&(curenv->ActiveList), ele);
 				}
 				else
 				{
+					cprintf("add");
 
 					LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
 				}
 			else
 			{
+				cprintf("activefull");
 				struct WorkingSetElement *firstSecondEle = LIST_LAST(&(curenv->ActiveList));
 				struct WorkingSetElement *lastActiveEle = LIST_LAST(&(curenv->ActiveList));	
 				pt_set_page_permissions(curenv->env_page_directory,firstSecondEle->virtual_address,0,PERM_PRESENT);
@@ -217,37 +219,36 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 				}
 				else
 				{
-
+					struct WorkingSetElement *currele;
+					LIST_FOREACH(currele,&(curenv->SecondList)){
+						if(currele==ele){
+							struct WorkingSetElement *activeLast=LIST_LAST(&(curenv->ActiveList));
+							struct WorkingSetElement *secondList_First=LIST_LAST(&(curenv->ActiveList));
+							struct WorkingSetElement *currRemove=currele;
+							LIST_INSERT_HEAD(&(curenv->SecondList), secondList_First);
+							LIST_LAST(&(curenv->ActiveList))=LIST_PREV(activeLast);
+							LIST_REMOVE(&(curenv->ActiveList), activeLast);
+							LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+							return;
+						}
+					}
 					LIST_INSERT_HEAD(&(curenv->SecondList), firstSecondEle);
 				}
+				LIST_REMOVE(&(curenv->ActiveList), lastActiveEle);
 				LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
 
-				LIST_REMOVE(&(curenv->ActiveList), lastActiveEle);
+				
 			}
 		}
-	}
-
-	else
-	{
-		// cprintf("7");
-		// cprintf("REPLACEMENT=========================WS Size = %d\n", wsSize );
-		// refer to the project presentation and documentation for details
-		if (isPageReplacmentAlgorithmFIFO())
-		{
-			// TODO: [PROJECT'23.MS3 - #1] [1] PAGE FAULT HANDLER - FIFO Replacement
-			//  Write your code here, remove the panic and write your code
-			panic("page_fault_handler() FIFO Replacement is not implemented yet...!!");
-		}
-		if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
-		{
+		else{
 			// TODO: [PROJECT'23.MS3 - #2] [1] PAGE FAULT HANDLER - LRU Replacement
 			//  Write your code here, remove the panic and write your code
 			struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
 			struct WorkingSetElement *currele;
 			LIST_FOREACH(currele,&(curenv->SecondList)){
 				if(currele==ele){
-					struct WorkingSetElement *activeLast=LIST_LAST(curenv->ActiveList);
-					struct WorkingSetElement *secondList_First=LIST_LAST(curenv->ActiveList);
+					struct WorkingSetElement *activeLast=LIST_LAST(&(curenv->ActiveList));
+					struct WorkingSetElement *secondList_First=LIST_LAST(&(curenv->ActiveList));
 					struct WorkingSetElement *currRemove=currele;
 					LIST_INSERT_HEAD(&(curenv->SecondList), secondList_First);
 					LIST_REMOVE(&(curenv->ActiveList), activeLast);
@@ -256,18 +257,17 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 					return;
 				}
 			}
-			struct WorkingSetElement *secondList_last=LIST_LAST(curenv->SecondList);
-			struct WorkingSetElement *activeLast=LIST_LAST(curenv->ActiveList);
-			struct WorkingSetElement *secondList_First=LIST_LAST(curenv->ActiveList);
+			struct WorkingSetElement *secondList_last=LIST_LAST(&(curenv->SecondList));
+			struct WorkingSetElement *activeLast=LIST_LAST(&(curenv->ActiveList));
+			struct WorkingSetElement *secondList_First=LIST_LAST(&(curenv->ActiveList));
 			LIST_REMOVE(&(curenv->SecondList),secondList_last);
 			LIST_INSERT_HEAD(&(curenv->SecondList),secondList_First);
 			LIST_REMOVE(&(curenv->ActiveList), activeLast);
 			LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
 			// TODO: [PROJECT'23.MS3 - BONUS] [1] PAGE FAULT HANDLER - O(1) implementation of LRU replacement
 		}
-
 	}
-}
+ }
 
 void __page_fault_handler_with_buffering(struct Env *curenv, uint32 fault_va)
 {

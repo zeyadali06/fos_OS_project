@@ -544,6 +544,7 @@ int64 timer_ticks()
 }
 int env_get_nice(struct Env* e)
 {
+	cprintf("get\n");
 return e->nice;
 	//TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - env_get_nice
 	//Your code is here
@@ -553,14 +554,16 @@ return e->nice;
 }
 void env_set_nice(struct Env* e, int nice_value)
 {
+	cprintf("set\n");
 	e->nice= nice_value;
 	//TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - env_set_nice
 	//Your code is here
 	//Comment the following line
-	//panic("Not implemented yet");
+	
 }
 int env_get_recent_cpu(struct Env* e)
 {
+	cprintf("get rec\n");
 	return e->recent;
 	//TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - env_get_recent_cpu
 	//Your code is here
@@ -571,7 +574,7 @@ int env_get_recent_cpu(struct Env* e)
 int get_load_average()
 {
 	
-	
+	cprintf("load\n");
 	return loadavg ;
 	//TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - get_load_average
 	//Your code is here

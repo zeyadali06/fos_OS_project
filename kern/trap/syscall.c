@@ -303,7 +303,9 @@ uint32 sys_get_hard_limit()
 }
 
 void sys_env_set_nice (struct Env *e , int nice){
+	cprintf("trap");
  env_set_nice(e , nice);
+ cprintf("end trap");
 }
 
 
@@ -606,6 +608,7 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		// done added first 3 cases
 		//=====================================================================
 	case SYS_set_nice :
+		cprintf("sys");
 	    sys_env_set_nice((struct Env*)a1 ,a2);
 	    break;
 	case SYS_get_hard_limit:
