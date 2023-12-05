@@ -11,6 +11,15 @@
 #include "../disk/pagefile_manager.h"
 #include "../mem/memory_manager.h"
 
+// void print_data(struct WS_List list)
+// {
+// 	struct WorkingSetElement *curr;
+// 	LIST_FOREACH(curr, &list)
+// 	{
+// 		cprintf("virtual address: %x, sweeps_counter: %d, time_stamp: %d, empty: %d\n", curr->virtual_address, curr->sweeps_counter, curr->time_stamp, curr->empty);
+// 	}
+// }
+
 // 2014 Test Free(): Set it to bypass the PAGE FAULT on an instruction with this length and continue executing the next one
 //  0 means don't bypass the PAGE FAULT
 uint8 bypassInstrLength = 0;
@@ -112,10 +121,11 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 	uint32 wsSize = env_page_ws_get_size(curenv);
 #endif
 
-	cprintf("s\n");
+	// cprintf("s\n");
 	if (isPageReplacmentAlgorithmFIFO())
 	{
-		cprintf("fifo");
+
+		// cprintf("fifo");
 		if (wsSize < (curenv->page_WS_max_size))
 		{
 			// cprintf("1");
@@ -147,46 +157,45 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 					// if (pf_add_empty_env_page(curenv, fault_va, 0) == E_NO_PAGE_FILE_SPACE)
 					// 	panic("ERROR: No enough virtual space on the page file");
 
+					LIST_INSERT_TAIL(&(curenv->page_WS_list), ele);
+					if (curenv->page_WS_max_size == (LIST_SIZE(&(curenv->page_WS_list))))
+					{
+						// cprintf("5");
+						curenv->page_last_WS_element = LIST_FIRST(&(curenv->page_WS_list));
+					}
+					// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, 0, NULL));
+					// pf_add_empty_env_page(curenv, fault_va, 1);
+
+					// cprintf("sizeafter:%d, maxSize:%d\n", LIST_SIZE(&(curenv->page_WS_list)), curenv->page_WS_max_size);
+				}
+				else
+				{
+					// cprintf("6");
+					// cprintf("Kill\n");
+					sched_kill_env(curenv->env_id);
+					return;
+				}
+			}
+			else
+			{
 				LIST_INSERT_TAIL(&(curenv->page_WS_list), ele);
 				if (curenv->page_WS_max_size == (LIST_SIZE(&(curenv->page_WS_list))))
 				{
 					// cprintf("5");
 					curenv->page_last_WS_element = LIST_FIRST(&(curenv->page_WS_list));
 				}
-				// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, 0, NULL));
-				// pf_add_empty_env_page(curenv, fault_va, 1);
+			}
 
-				// cprintf("sizeafter:%d, maxSize:%d\n", LIST_SIZE(&(curenv->page_WS_list)), curenv->page_WS_max_size);
-			}
-			else
-			{
-				// cprintf("6");
-				// cprintf("Kill\n");
-				sched_kill_env(curenv->env_id);
-				return;
-			}
+			// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, fault_va, NULL));
+
+			// refer to the project presentation and documentation for details
 		}
 		else
 		{
-			LIST_INSERT_TAIL(&(curenv->page_WS_list), ele);
-			if (curenv->page_WS_max_size == (LIST_SIZE(&(curenv->page_WS_list))))
-			{
-				// cprintf("5");
-				curenv->page_last_WS_element = LIST_FIRST(&(curenv->page_WS_list));
-			}
-		}
+			// cprintf("7");
+			// cprintf("REPLACEMENT=========================WS Size = %d\n", wsSize );
+			// refer to the project presentation and documentation for details
 
-		// pf_update_env_page(curenv, fault_va, get_frame_info(curenv->env_page_directory, fault_va, NULL));
-
-		// refer to the project presentation and documentation for details
-	}
-	else
-	{
-		// cprintf("7");
-		// cprintf("REPLACEMENT=========================WS Size = %d\n", wsSize );
-		// refer to the project presentation and documentation for details
-		if (isPageReplacmentAlgorithmFIFO())
-		{
 			// TODO: [PROJECT'23.MS3 - #1] [1] PAGE FAULT HANDLER - FIFO Replacement
 			//  Write your code here, remove the panic and write your code
 			// panic("page_fault_handler() FIFO Replacement is not implemented yet...!!");
@@ -246,104 +255,195 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 			// cprintf("--------------------------------------------------\n");
 		}
 	}
-	}
+
 	if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
 	{
-		cprintf("algoLRU\n");
+		fault_va &= 0xFFFFF000;
+		// cprintf("--------------------------------------------------\n");
+
 		uint32 activeListSize = LIST_SIZE(&(curenv->ActiveList));
 		uint32 secondListSize = LIST_SIZE(&(curenv->SecondList));
-		// uint32 wsMS = LIST_SIZE(&(curenv->page_WS_max_size));
-				struct FrameInfo *frame_info_ptr;
-			if (allocate_frame(&frame_info_ptr) == 0)
-			{
-				// cprintf("2\n");
-				map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_USER | PERM_WRITEABLE);
-				frame_info_ptr->va = fault_va;
-			}
+
 		if ((activeListSize + secondListSize) < curenv->page_WS_max_size)
 		{
-			cprintf("after if\n ");
-			struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
-				cprintf("%d  %d \n",activeListSize,curenv->ActiveListSize);
-			if (activeListSize < curenv->ActiveListSize)
-				if (activeListSize == 0)
-				{
-					cprintf("firstadd");
-					LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
-					LIST_INSERT_TAIL(&(curenv->ActiveList), ele);
-				}
-				else
-				{
-					cprintf("add");
+			cprintf("Placment va: %x\n", fault_va);
+			struct FrameInfo *frame_info_ptr;
+			if (allocate_frame(&frame_info_ptr) == 0)
+			{
+				map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_USER | PERM_WRITEABLE);
+				frame_info_ptr->va = fault_va;
+				pf_read_env_page(curenv, (void *)fault_va);
+			}
 
-					LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
-				}
+			if (activeListSize < curenv->ActiveListSize)
+			{
+				// cprintf("active not full\n");
+				struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+				LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+				// env_page_ws_print(curenv);
+				// cprintf("--------------------------------------------------\n");
+			}
 			else
 			{
-				cprintf("activefull");
-				struct WorkingSetElement *firstSecondEle = LIST_LAST(&(curenv->ActiveList));
-				struct WorkingSetElement *lastActiveEle = LIST_LAST(&(curenv->ActiveList));	
-				pt_set_page_permissions(curenv->env_page_directory,firstSecondEle->virtual_address,0,PERM_PRESENT);
-				if (secondListSize == 0)
+				struct WorkingSetElement *currele;
+				LIST_FOREACH(currele, &(curenv->SecondList))
 				{
+					if ((uint32)(currele->virtual_address & 0xFFFFF000) == (uint32)(fault_va & 0xFFFFF000))
+					{
 
-					LIST_INSERT_HEAD(&(curenv->SecondList), firstSecondEle);
-					LIST_INSERT_TAIL(&(curenv->SecondList), firstSecondEle);
-				}
-				else
-				{
-					struct WorkingSetElement *currele;
-					LIST_FOREACH(currele,&(curenv->SecondList)){
-						if(currele==ele){
-							struct WorkingSetElement *activeLast=LIST_LAST(&(curenv->ActiveList));
-							struct WorkingSetElement *secondList_First=LIST_LAST(&(curenv->ActiveList));
-							struct WorkingSetElement *currRemove=currele;
-							LIST_INSERT_HEAD(&(curenv->SecondList), secondList_First);
-							LIST_LAST(&(curenv->ActiveList))=LIST_PREV(activeLast);
-							LIST_REMOVE(&(curenv->ActiveList), activeLast);
-							LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
-							return;
-						}
+						// cprintf("insertion\n");
+						struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+
+						struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
+						LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
+						pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, 0, PERM_PRESENT);
+						LIST_INSERT_HEAD(&(curenv->SecondList), firstListLastEle1);
+
+						struct WorkingSetElement *currele1 = currele;
+						LIST_REMOVE(&(curenv->SecondList), currele1);
+						pt_set_page_permissions(curenv->env_page_directory, ele->virtual_address, PERM_PRESENT, 0);
+						LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+
+						// env_page_ws_print(curenv);
+						// cprintf("--------------------------------------------------\n");
+
+						return;
 					}
-					LIST_INSERT_HEAD(&(curenv->SecondList), firstSecondEle);
 				}
-				LIST_REMOVE(&(curenv->ActiveList), lastActiveEle);
+
+				// cprintf("insertion faild\n");
+				struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
+
+				LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
+				pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, 0, PERM_PRESENT);
+				LIST_INSERT_HEAD(&(curenv->SecondList), firstListLastEle1);
+
+				struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+				pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, PERM_PRESENT, 0);
 				LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
 
-				
+				// env_page_ws_print(curenv);
+				// cprintf("--------------------------------------------------\n");
+				return;
 			}
 		}
-		else{
+		else
+		{
 			// TODO: [PROJECT'23.MS3 - #2] [1] PAGE FAULT HANDLER - LRU Replacement
 			//  Write your code here, remove the panic and write your code
-			struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
-			struct WorkingSetElement *currele;
-			LIST_FOREACH(currele,&(curenv->SecondList)){
-				if(currele==ele){
-					struct WorkingSetElement *activeLast=LIST_LAST(&(curenv->ActiveList));
-					struct WorkingSetElement *secondList_First=LIST_LAST(&(curenv->ActiveList));
-					struct WorkingSetElement *currRemove=currele;
-					LIST_INSERT_HEAD(&(curenv->SecondList), secondList_First);
-					LIST_REMOVE(&(curenv->ActiveList), activeLast);
-					LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
-					LIST_REMOVE(&(curenv->SecondList),currRemove);
-					return;
-				}
+
+			cprintf("Replacment va: %x\n", fault_va);
+
+			// struct WorkingSetElement *currele;
+			// LIST_FOREACH(currele, &(curenv->SecondList))
+			// {
+			// 	if (currele == ele)
+			// 	{
+			// 		struct WorkingSetElement *activeLast = LIST_LAST(&(curenv->ActiveList));
+			// 		struct WorkingSetElement *secondList_First = LIST_LAST(&(curenv->ActiveList));
+			// 		struct WorkingSetElement *currRemove = currele;
+			// 		LIST_INSERT_HEAD(&(curenv->SecondList), secondList_First);
+			// 		LIST_REMOVE(&(curenv->ActiveList), activeLast);
+			// 		LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+			// 		LIST_REMOVE(&(curenv->SecondList), currRemove);
+			// 		return;
+			// 	}
+			// }
+
+			// cprintf("Replacment\n");
+			struct FrameInfo *frame_info_ptr;
+			if (allocate_frame(&frame_info_ptr) == 0)
+			{
+				map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_USER | PERM_WRITEABLE);
+				frame_info_ptr->va = fault_va;
+				pf_read_env_page(curenv, (void *)fault_va);
 			}
-			struct WorkingSetElement *secondList_last=LIST_LAST(&(curenv->SecondList));
-			struct WorkingSetElement *activeLast=LIST_LAST(&(curenv->ActiveList));
-			struct WorkingSetElement *secondList_First=LIST_LAST(&(curenv->ActiveList));
-			LIST_REMOVE(&(curenv->SecondList),secondList_last);
-			LIST_INSERT_HEAD(&(curenv->SecondList),secondList_First);
-			LIST_REMOVE(&(curenv->ActiveList), activeLast);
+
+			struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+
+			// struct WorkingSetElement *currele;
+			// LIST_FOREACH(currele, &(curenv->SecondList))
+			// {
+			// 	if ((uint32)(currele->virtual_address & 0xFFFFF000) == (uint32)(fault_va & 0xFFFFF000))
+			// 	{
+			//
+			// 		// cprintf("insertion\n");
+			// 		struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+			//
+			// 		struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
+			// 		LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
+			// 		pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, 0, PERM_PRESENT);
+			// 		LIST_INSERT_HEAD(&(curenv->SecondList), firstListLastEle1);
+			//
+			// 		struct WorkingSetElement *currele1 = currele;
+			// 		LIST_REMOVE(&(curenv->SecondList), currele1);
+			// 		pt_set_page_permissions(curenv->env_page_directory, ele->virtual_address, PERM_PRESENT, 0);
+			// 		LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+			//
+			// 		// env_page_ws_print(curenv);
+			// 		// cprintf("--------------------------------------------------\n");
+			//
+			// 		cprintf("Finish1\n");
+			//
+			// 		return;
+			// 	}
+			// }
+
+			struct WorkingSetElement *secondListLastEle = LIST_LAST(&(curenv->SecondList));
+			int perms = pt_get_page_permissions(curenv->env_page_directory, secondListLastEle->virtual_address);
+			if (perms & PERM_MODIFIED)
+			{
+				uint32 *ptrPage;
+				struct FrameInfo *frame = get_frame_info(curenv->env_page_directory, secondListLastEle->virtual_address, &ptrPage);
+				pf_update_env_page(curenv, secondListLastEle->virtual_address, frame);
+			}
+			pt_set_page_permissions(curenv->env_page_directory, secondListLastEle->virtual_address, 0, PERM_PRESENT);
+			LIST_REMOVE(&(curenv->SecondList), secondListLastEle);
+			unmap_frame(curenv->env_page_directory, secondListLastEle->virtual_address);
+
+			struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
+			LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
+			pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, 0, PERM_PRESENT);
+			LIST_INSERT_HEAD(&(curenv->SecondList), firstListLastEle1);
+
+			pt_set_page_permissions(curenv->env_page_directory, ele->virtual_address, PERM_PRESENT, 0);
 			LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+
+			cprintf("Finish\n");
+
+			// struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+			// pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, PERM_PRESENT, 0);
+			// LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+			//
+			// struct WorkingSetElement *secondList_last = LIST_LAST(&(curenv->SecondList));
+			// struct WorkingSetElement *activeLast = LIST_LAST(&(curenv->ActiveList));
+			// struct WorkingSetElement *secondList_First = LIST_LAST(&(curenv->ActiveList));
+			// LIST_REMOVE(&(curenv->SecondList), secondList_last);
+			// LIST_INSERT_HEAD(&(curenv->SecondList), secondList_First);
+			// LIST_REMOVE(&(curenv->ActiveList), activeLast);
+			// LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
 			// TODO: [PROJECT'23.MS3 - BONUS] [1] PAGE FAULT HANDLER - O(1) implementation of LRU replacement
 		}
 	}
-	}
-
+}
 
 void __page_fault_handler_with_buffering(struct Env *curenv, uint32 fault_va)
 {
 	panic("this function is not required...!!");
 }
+
+// ActiveList: 5
+// ============
+// 0:           eebfd000
+// 1:           203000
+// 2:           202000
+// 3:           201000
+// 4:           200000
+//
+// SecondList: 5
+// ============
+// 5:           802000
+// 6:           801000
+// 7:           800000
+// 8:           205000
+// 9:           204000
