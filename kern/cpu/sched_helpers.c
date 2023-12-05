@@ -9,8 +9,8 @@
 #include <kern/tests/utilities.h>
 #include <kern/cmd/command_prompt.h>
 
-//void on_clock_update_WS_time_stamps();
-extern void cleanup_buffers(struct Env* e);
+// void on_clock_update_WS_time_stamps();
+extern void cleanup_buffers(struct Env *e);
 //================
 
 //=================================================================================//
@@ -20,9 +20,9 @@ extern void cleanup_buffers(struct Env* e);
 //================================
 // [1] Initialize the given queue:
 //================================
-void init_queue(struct Env_Queue* queue)
+void init_queue(struct Env_Queue *queue)
 {
-	if(queue != NULL)
+	if (queue != NULL)
 	{
 		LIST_INIT(queue);
 	}
@@ -31,9 +31,9 @@ void init_queue(struct Env_Queue* queue)
 //================================
 // [2] Get queue size:
 //================================
-int queue_size(struct Env_Queue* queue)
+int queue_size(struct Env_Queue *queue)
 {
-	if(queue != NULL)
+	if (queue != NULL)
 	{
 		return LIST_SIZE(queue);
 	}
@@ -46,10 +46,10 @@ int queue_size(struct Env_Queue* queue)
 //====================================
 // [3] Enqueue env in the given queue:
 //====================================
-void enqueue(struct Env_Queue* queue, struct Env* env)
+void enqueue(struct Env_Queue *queue, struct Env *env)
 {
-	assert(queue != NULL)	;
-	if(env != NULL)
+	assert(queue != NULL);
+	if (env != NULL)
 	{
 		LIST_INSERT_HEAD(queue, env);
 	}
@@ -58,10 +58,11 @@ void enqueue(struct Env_Queue* queue, struct Env* env)
 //======================================
 // [4] Dequeue env from the given queue:
 //======================================
-struct Env* dequeue(struct Env_Queue* queue)
+struct Env *dequeue(struct Env_Queue *queue)
 {
-	if (queue == NULL) return NULL;
-	struct Env* envItem = LIST_LAST(queue);
+	if (queue == NULL)
+		return NULL;
+	struct Env *envItem = LIST_LAST(queue);
 	if (envItem != NULL)
 	{
 		LIST_REMOVE(queue, envItem);
@@ -72,9 +73,9 @@ struct Env* dequeue(struct Env_Queue* queue)
 //====================================
 // [5] Remove env from the given queue:
 //====================================
-void remove_from_queue(struct Env_Queue* queue, struct Env* e)
+void remove_from_queue(struct Env_Queue *queue, struct Env *e)
 {
-	assert(queue != NULL)	;
+	assert(queue != NULL);
 
 	if (e != NULL)
 	{
@@ -85,14 +86,15 @@ void remove_from_queue(struct Env_Queue* queue, struct Env* e)
 //========================================
 // [6] Search by envID in the given queue:
 //========================================
-struct Env* find_env_in_queue(struct Env_Queue* queue, uint32 envID)
+struct Env *find_env_in_queue(struct Env_Queue *queue, uint32 envID)
 {
-	if (queue == NULL) return NULL;
+	if (queue == NULL)
+		return NULL;
 
-	struct Env * ptr_env=NULL;
+	struct Env *ptr_env = NULL;
 	LIST_FOREACH(ptr_env, queue)
 	{
-		if(ptr_env->env_id == envID)
+		if (ptr_env->env_id == envID)
 		{
 			return ptr_env;
 		}
@@ -120,11 +122,11 @@ void sched_delete_ready_queues()
 //=================================================
 // [2] Insert the given Env in the 1st Ready Queue:
 //=================================================
-void sched_insert_ready0(struct Env* env)
+void sched_insert_ready0(struct Env *env)
 {
-	if(env != NULL)
+	if (env != NULL)
 	{
-		env->env_status = ENV_READY ;
+		env->env_status = ENV_READY;
 		enqueue(&(env_ready_queues[0]), env);
 	}
 }
@@ -132,13 +134,13 @@ void sched_insert_ready0(struct Env* env)
 //=================================================
 // [3] Remove the given Env from the Ready Queue(s):
 //=================================================
-void sched_remove_ready(struct Env* env)
+void sched_remove_ready(struct Env *env)
 {
-	if(env != NULL)
+	if (env != NULL)
 	{
-		for (int i = 0 ; i < num_of_ready_queues ; i++)
+		for (int i = 0; i < num_of_ready_queues; i++)
 		{
-			struct Env * ptr_env = find_env_in_queue(&(env_ready_queues[i]), env->env_id);
+			struct Env *ptr_env = find_env_in_queue(&(env_ready_queues[i]), env->env_id);
 			if (ptr_env != NULL)
 			{
 				LIST_REMOVE(&(env_ready_queues[i]), env);
@@ -152,11 +154,11 @@ void sched_remove_ready(struct Env* env)
 //=================================================
 // [4] Insert the given Env in NEW Queue:
 //=================================================
-void sched_insert_new(struct Env* env)
+void sched_insert_new(struct Env *env)
 {
-	if(env != NULL)
+	if (env != NULL)
 	{
-		env->env_status = ENV_NEW ;
+		env->env_status = ENV_NEW;
 		enqueue(&env_new_queue, env);
 	}
 }
@@ -164,11 +166,11 @@ void sched_insert_new(struct Env* env)
 //=================================================
 // [5] Remove the given Env from NEW Queue:
 //=================================================
-void sched_remove_new(struct Env* env)
+void sched_remove_new(struct Env *env)
 {
-	if(env != NULL)
+	if (env != NULL)
 	{
-		LIST_REMOVE(&env_new_queue, env) ;
+		LIST_REMOVE(&env_new_queue, env);
 		env->env_status = ENV_UNKNOWN;
 	}
 }
@@ -176,23 +178,26 @@ void sched_remove_new(struct Env* env)
 //=================================================
 // [6] Insert the given Env in EXIT Queue:
 //=================================================
-void sched_insert_exit(struct Env* env)
+void sched_insert_exit(struct Env *env)
 {
-	if(env != NULL)
+	if (env != NULL)
 	{
-		if(isBufferingEnabled()) {cleanup_buffers(env);}
-		env->env_status = ENV_EXIT ;
+		if (isBufferingEnabled())
+		{
+			cleanup_buffers(env);
+		}
+		env->env_status = ENV_EXIT;
 		enqueue(&env_exit_queue, env);
 	}
 }
 //=================================================
 // [7] Remove the given Env from EXIT Queue:
 //=================================================
-void sched_remove_exit(struct Env* env)
+void sched_remove_exit(struct Env *env)
 {
-	if(env != NULL)
+	if (env != NULL)
 	{
-		LIST_REMOVE(&env_exit_queue, env) ;
+		LIST_REMOVE(&env_exit_queue, env);
 		env->env_status = ENV_UNKNOWN;
 	}
 }
@@ -200,30 +205,29 @@ void sched_remove_exit(struct Env* env)
 //=================================================
 // [8] Sched the given Env in NEW Queue:
 //=================================================
-void sched_new_env(struct Env* e)
+void sched_new_env(struct Env *e)
 {
-	//add the given env to the scheduler NEW queue
-	if (e!=NULL)
+	// add the given env to the scheduler NEW queue
+	if (e != NULL)
 	{
 		sched_insert_new(e);
 	}
 }
-
 
 //=================================================
 // [9] Run the given EnvID:
 //=================================================
 void sched_run_env(uint32 envId)
 {
-	struct Env* ptr_env=NULL;
+	struct Env *ptr_env = NULL;
 	LIST_FOREACH(ptr_env, &env_new_queue)
 	{
-		if(ptr_env->env_id == envId)
+		if (ptr_env->env_id == envId)
 		{
 			sched_remove_new(ptr_env);
 			sched_insert_ready0(ptr_env);
 
-			/*2015*///if scheduler not run yet, then invoke it!
+			/*2015*/ // if scheduler not run yet, then invoke it!
 			if (scheduler_status == SCH_STOPPED)
 			{
 				fos_scheduler();
@@ -236,7 +240,6 @@ void sched_run_env(uint32 envId)
 	//	{
 	//		cprintf("%s - %d\n", ptr_env->prog_name, ptr_env->env_id);
 	//	}
-
 }
 
 //=================================================
@@ -244,13 +247,13 @@ void sched_run_env(uint32 envId)
 //=================================================
 void sched_exit_env(uint32 envId)
 {
-	struct Env* ptr_env=NULL;
+	struct Env *ptr_env = NULL;
 	int found = 0;
 	if (!found)
 	{
 		LIST_FOREACH(ptr_env, &env_new_queue)
 		{
-			if(ptr_env->env_id == envId)
+			if (ptr_env->env_id == envId)
 			{
 				sched_remove_new(ptr_env);
 				found = 1;
@@ -260,14 +263,14 @@ void sched_exit_env(uint32 envId)
 	}
 	if (!found)
 	{
-		for (int i = 0 ; i < num_of_ready_queues ; i++)
+		for (int i = 0; i < num_of_ready_queues; i++)
 		{
 			if (!LIST_EMPTY(&(env_ready_queues[i])))
 			{
-				ptr_env=NULL;
+				ptr_env = NULL;
 				LIST_FOREACH(ptr_env, &(env_ready_queues[i]))
 				{
-					if(ptr_env->env_id == envId)
+					if (ptr_env->env_id == envId)
 					{
 						LIST_REMOVE(&(env_ready_queues[i]), ptr_env);
 						found = 1;
@@ -292,7 +295,7 @@ void sched_exit_env(uint32 envId)
 	{
 		sched_insert_exit(ptr_env);
 
-		//If it's the curenv, then reinvoke the scheduler as there's no meaning to return back to an exited env
+		// If it's the curenv, then reinvoke the scheduler as there's no meaning to return back to an exited env
 		if (curenv->env_id == envId)
 		{
 			curenv = NULL;
@@ -301,20 +304,19 @@ void sched_exit_env(uint32 envId)
 	}
 }
 
-
 /*2015*/
 //=================================================
 // [11] KILL the given EnvID:
 //=================================================
 void sched_kill_env(uint32 envId)
 {
-	struct Env* ptr_env=NULL;
+	struct Env *ptr_env = NULL;
 	int found = 0;
 	if (!found)
 	{
 		LIST_FOREACH(ptr_env, &env_new_queue)
-															{
-			if(ptr_env->env_id == envId)
+		{
+			if (ptr_env->env_id == envId)
 			{
 				cprintf("killing[%d] %s from the NEW queue...", ptr_env->env_id, ptr_env->prog_name);
 				sched_remove_new(ptr_env);
@@ -323,18 +325,18 @@ void sched_kill_env(uint32 envId)
 				found = 1;
 				//			return;
 			}
-															}
+		}
 	}
 	if (!found)
 	{
-		for (int i = 0 ; i < num_of_ready_queues ; i++)
+		for (int i = 0; i < num_of_ready_queues; i++)
 		{
 			if (!LIST_EMPTY(&(env_ready_queues[i])))
 			{
-				ptr_env=NULL;
+				ptr_env = NULL;
 				LIST_FOREACH(ptr_env, &(env_ready_queues[i]))
 				{
-					if(ptr_env->env_id == envId)
+					if (ptr_env->env_id == envId)
 					{
 						cprintf("killing[%d] %s from the READY queue #%d...", ptr_env->env_id, ptr_env->prog_name, i);
 						LIST_REMOVE(&(env_ready_queues[i]), ptr_env);
@@ -342,7 +344,7 @@ void sched_kill_env(uint32 envId)
 						cprintf("DONE\n");
 						found = 1;
 						break;
-						//return;
+						// return;
 					}
 				}
 			}
@@ -352,17 +354,17 @@ void sched_kill_env(uint32 envId)
 	}
 	if (!found)
 	{
-		ptr_env=NULL;
+		ptr_env = NULL;
 		LIST_FOREACH(ptr_env, &env_exit_queue)
 		{
-			if(ptr_env->env_id == envId)
+			if (ptr_env->env_id == envId)
 			{
 				cprintf("killing[%d] %s from the EXIT queue...", ptr_env->env_id, ptr_env->prog_name);
 				sched_remove_exit(ptr_env);
 				env_free(ptr_env);
 				cprintf("DONE\n");
 				found = 1;
-				//return;
+				// return;
 			}
 		}
 	}
@@ -377,9 +379,9 @@ void sched_kill_env(uint32 envId)
 			env_free(ptr_env);
 			cprintf("DONE\n");
 			found = 1;
-			//If it's the curenv, then reset it and reinvoke the scheduler
-			//as there's no meaning to return back to a killed env
-			//lcr3(K_PHYSICAL_ADDRESS(ptr_page_directory));
+			// If it's the curenv, then reset it and reinvoke the scheduler
+			// as there's no meaning to return back to a killed env
+			// lcr3(K_PHYSICAL_ADDRESS(ptr_page_directory));
 			lcr3(phys_page_directory);
 			curenv = NULL;
 			fos_scheduler();
@@ -392,7 +394,7 @@ void sched_kill_env(uint32 envId)
 //=================================================
 void sched_print_all()
 {
-	struct Env* ptr_env ;
+	struct Env *ptr_env;
 	if (!LIST_EMPTY(&env_new_queue))
 	{
 		cprintf("\nThe processes in NEW queue are:\n");
@@ -406,7 +408,7 @@ void sched_print_all()
 		cprintf("\nNo processes in NEW queue\n");
 	}
 	cprintf("================================================\n");
-	for (int i = 0 ; i < num_of_ready_queues ; i++)
+	for (int i = 0; i < num_of_ready_queues; i++)
 	{
 		if (!LIST_EMPTY(&(env_ready_queues[i])))
 		{
@@ -441,13 +443,13 @@ void sched_print_all()
 //=================================================
 void sched_run_all()
 {
-	struct Env* ptr_env=NULL;
+	struct Env *ptr_env = NULL;
 	LIST_FOREACH(ptr_env, &env_new_queue)
 	{
 		sched_remove_new(ptr_env);
 		sched_insert_ready0(ptr_env);
 	}
-	/*2015*///if scheduler not run yet, then invoke it!
+	/*2015*/ // if scheduler not run yet, then invoke it!
 	if (scheduler_status == SCH_STOPPED)
 		fos_scheduler();
 }
@@ -457,7 +459,7 @@ void sched_run_all()
 //=================================================
 void sched_kill_all()
 {
-	struct Env* ptr_env ;
+	struct Env *ptr_env;
 	if (!LIST_EMPTY(&env_new_queue))
 	{
 		cprintf("\nKILLING the processes in the NEW queue...\n");
@@ -474,7 +476,7 @@ void sched_kill_all()
 		cprintf("No processes in NEW queue\n");
 	}
 	cprintf("================================================\n");
-	for (int i = 0 ; i < num_of_ready_queues ; i++)
+	for (int i = 0; i < num_of_ready_queues; i++)
 	{
 		if (!LIST_EMPTY(&(env_ready_queues[i])))
 		{
@@ -489,7 +491,7 @@ void sched_kill_all()
 		}
 		else
 		{
-			cprintf("No processes in READY queue #%d\n",i);
+			cprintf("No processes in READY queue #%d\n", i);
 		}
 		cprintf("================================================\n");
 	}
@@ -510,7 +512,7 @@ void sched_kill_all()
 		cprintf("No processes in EXIT queue\n");
 	}
 
-	//reinvoke the scheduler since there're no env to return back to it
+	// reinvoke the scheduler since there're no env to return back to it
 	curenv = NULL;
 	fos_scheduler();
 }
@@ -521,12 +523,12 @@ void sched_kill_all()
 //=================================================
 void sched_exit_all_ready_envs()
 {
-	struct Env* ptr_env=NULL;
-	for (int i = 0 ; i < num_of_ready_queues ; i++)
+	struct Env *ptr_env = NULL;
+	for (int i = 0; i < num_of_ready_queues; i++)
 	{
 		if (!LIST_EMPTY(&(env_ready_queues[i])))
 		{
-			ptr_env=NULL;
+			ptr_env = NULL;
 			LIST_FOREACH(ptr_env, &(env_ready_queues[i]))
 			{
 				LIST_REMOVE(&(env_ready_queues[i]), ptr_env);
@@ -542,59 +544,68 @@ int64 timer_ticks()
 {
 	return ticks;
 }
-int env_get_nice(struct Env* e)
+int env_get_nice(struct Env *e)
 {
-return e->nice;
-	//TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - env_get_nice
-	//Your code is here
-	//Comment the following line
-	// panic("Not implemented yet");
-	// return 0;
+	return e->nice;
+	// TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - env_get_nice
+	// Your code is here
+	// Comment the following line
+	//  panic("Not implemented yet");
+	//  return 0;
 }
-void env_set_nice(struct Env* e, int nice_value)
+void env_set_nice(struct Env *e, int nice_value)
 {
 	// e->nice= nice_value;
-	e->priority=PRI_MAX -(e->recent/4)-(nice_value*2);
-	e->nice= nice_value;
-	//TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - env_set_nice
-	//Your code is here
-	//Comment the following line
-	//panic("Not implemented yet");
-}
-int env_get_recent_cpu(struct Env* e)
-{   
-	uint32 conv = e->recent * FIX_F;
-	
-	if(conv>0)
-	return 100* ((conv+FIX_F/2)/FIX_F) ;
-	else if(conv<0)
-	return 100* ((conv-FIX_F/2)/FIX_F);
-	else 
-	return 0;
-	// return e->recent;
-	//TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - env_get_recent_cpu
-	//Your code is here
-	//Comment the following line
+	e->priority = PRI_MAX - (e->recent / 4) - (nice_value * 2);
+	e->nice = nice_value;
+	// TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - env_set_nice
+	// Your code is here
+	// Comment the following line
 	// panic("Not implemented yet");
+}
+int env_get_recent_cpu(struct Env *e)
+{
+	// mul in integer return
+	// return  (fix_round( fix_int(e->recent))*100 );
+	// mul in fixed point
+	return fix_round(fix_scale(fix_int(e->recent), 100));
+
+	// uint32 conv = e->recent * FIX_F;
+	// if(conv>0)
+	// return 100* ((conv+FIX_F/2)/FIX_F) ;
+	// else if(conv<0)
+	// return 100* ((conv-FIX_F/2)/FIX_F);
+	// else
 	// return 0;
+	// return e->recent;
+
+	// TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - env_get_recent_cpu
+	// Your code is here
+	// Comment the following line
+	//  panic("Not implemented yet");
+	//  return 0;
 }
 int get_load_average()
 {
-	
-	uint32 avgconv = loadavg * FIX_F;
-	
-	if(avgconv>0)
-	return 100* ((avgconv+FIX_F/2)/FIX_F) ;
-	else if(avgconv<0)
-	return 100* ((avgconv-FIX_F/2)/FIX_F);
-	else 
-	return 0;
-	// return loadavg ;
-	//TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - get_load_average
-	//Your code is here
-	// //Comment the following line
-	// panic("Not implemented yet");
+	// mul in integer return
+	// return  (fix_round( fix_int(loadavg))*100 );
+	// mul in fixed point
+	return fix_round(fix_scale(fix_int(loadavg), 100));
+
+	// uint32 avgconv = loadavg * FIX_F;
+	// if(avgconv>0)
+	// return 100* ((avgconv+FIX_F/2)/FIX_F) ;
+	// else if(avgconv<0)
+	// return 100* ((avgconv-FIX_F/2)/FIX_F);
+	// else
 	// return 0;
+	// return loadavg ;
+
+	// TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - get_load_average
+	// Your code is here
+	//  //Comment the following line
+	//  panic("Not implemented yet");
+	//   return 0;
 }
 /********* for BSD Priority Scheduler *************/
 //==================================================================================//
