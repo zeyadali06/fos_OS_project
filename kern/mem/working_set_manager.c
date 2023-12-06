@@ -98,13 +98,13 @@ void env_page_ws_print(struct Env *e)
 	if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
 	{
 		int i = 0;
-		cprintf("ActiveList:\n============\n");
+		cprintf("ActiveList: %d \n============\n",e->ActiveListSize);
 		struct WorkingSetElement *ptr_WS_element;
 		LIST_FOREACH(ptr_WS_element, &(e->ActiveList))
 		{
 			cprintf("%d:	%x\n", i++, ptr_WS_element->virtual_address);
 		}
-		cprintf("\nSecondList:\n============\n");
+		cprintf("\nSecondList: %d \n============\n",e->SecondListSize);
 		LIST_FOREACH(ptr_WS_element, &(e->SecondList))
 		{
 			cprintf("%d:	%x\n", i++, ptr_WS_element->virtual_address);
