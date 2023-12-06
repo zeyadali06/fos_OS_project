@@ -302,6 +302,12 @@ uint32 sys_get_hard_limit()
 	return curenv->user_hard_limit;
 }
 
+void sys_env_set_nice (  int nice){
+ env_set_nice(curenv , nice);
+}
+
+
+
 void sys_allocate_chunk(uint32 virtual_address, uint32 size, uint32 perms)
 {
 	allocate_chunk(curenv->env_page_directory, virtual_address, size, perms);
@@ -620,6 +626,9 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		// TODO: [PROJECT'23.MS1 - #4] [2] SYSTEM CALLS - Add suitable code here
 		// done added first 3 cases
 		//=====================================================================
+	case SYS_set_nice :
+	    sys_env_set_nice(a1);
+	    break;
 	case SYS_get_hard_limit:
 		return sys_get_hard_limit();
 		break;

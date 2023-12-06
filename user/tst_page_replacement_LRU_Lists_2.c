@@ -70,11 +70,17 @@ void _main(void)
 		actual_active_list[4] = 0x807000;
 		actual_active_list[5] = 0x809000;
 
-		actual_second_list[0] = 0x803000;
-		actual_second_list[1] = 0x80c000;
-		actual_second_list[2] = 0x80b000;
-		actual_second_list[3] = 0x80a000;
-		actual_second_list[4] = 0x808000;
+		// actual_second_list[0] = 0x803000;
+		// actual_second_list[1] = 0x80c000;
+		// actual_second_list[2] = 0x80b000;
+		// actual_second_list[3] = 0x80a000;
+		// actual_second_list[4] = 0x808000;
+
+		actual_second_list[0] = 0x80b000;
+		actual_second_list[1] = 0x80a000;
+		actual_second_list[2] = 0x809000;
+		actual_second_list[3] = 0x808000;
+		actual_second_list[4] = 0x807000;
 		int check = sys_check_LRU_lists(actual_active_list, actual_second_list, 6, 5);
 		if(check == 0)
 			panic("PAGE LRU Lists entry checking failed when a new PAGE ACCESS from the SECOND LIST is occurred..!!");

@@ -69,6 +69,7 @@
     "trap.h": "c",
     "fault_handler.h": "c",
     "tst_malloc_1": "c",
-    "lib.h": "c"
+    "lib.h": "c",
+    "user_environment.h": "c"
   }
 }
