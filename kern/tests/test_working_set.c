@@ -26,7 +26,7 @@ int sys_check_LRU_lists(uint32 *active_list_content, uint32 *second_list_content
 		{
 			if (ROUNDDOWN(ptr_WS_element->virtual_address, PAGE_SIZE) != ROUNDDOWN(active_list_content[idx_active_list], PAGE_SIZE))
 			{
-				cprintf("1first list not correct: %d\n", idx_active_list);
+				// cprintf("1first list not correct: %d\n", idx_active_list);
 
 				active_list_validation = 0;
 				break;
@@ -35,7 +35,7 @@ int sys_check_LRU_lists(uint32 *active_list_content, uint32 *second_list_content
 		}
 		if (LIST_SIZE(&env->ActiveList) != actual_active_list_size)
 		{
-			cprintf("2first list not correct: %d\n", idx_active_list);
+			// cprintf("2first list not correct: %d\n", idx_active_list);
 
 			active_list_validation = 0;
 		}
@@ -49,7 +49,7 @@ int sys_check_LRU_lists(uint32 *active_list_content, uint32 *second_list_content
 		{
 			if (ROUNDDOWN(ptr_WS_element->virtual_address, PAGE_SIZE) != ROUNDDOWN(second_list_content[idx_second_list], PAGE_SIZE))
 			{
-				cprintf("1second list not correct: %d\n", idx_second_list);
+				// cprintf("1second list not correct: %d\n", idx_second_list);
 				second_list_validation = 0;
 				break;
 			}
@@ -57,7 +57,7 @@ int sys_check_LRU_lists(uint32 *active_list_content, uint32 *second_list_content
 		}
 		if (LIST_SIZE(&env->SecondList) != actual_second_list_size)
 		{
-			cprintf("2second list not correct: %d\n", idx_second_list);
+			// cprintf("2second list not correct: %d\n", idx_second_list);
 			second_list_validation = 0;
 		}
 	}

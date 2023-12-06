@@ -266,32 +266,20 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 
 		if ((activeListSize + secondListSize) < curenv->page_WS_max_size)
 		{
-			cprintf("Placment va: %x\n", fault_va);
+			// cprintf("Placment va: %x\n", fault_va);
 			struct FrameInfo *frame_info_ptr;
-			
 
 			if (activeListSize < curenv->ActiveListSize)
 			{
+				// cprintf("active not full\n");
 				if (allocate_frame(&frame_info_ptr) == 0)
-			{
-				map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_MARKED | PERM_USER | PERM_WRITEABLE);
-				frame_info_ptr->va = fault_va;
-				pf_read_env_page(curenv, (void *)fault_va);
-			}
-				cprintf("active not full\n");
+				{
+					map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_MARKED | PERM_USER | PERM_WRITEABLE);
+					frame_info_ptr->va = fault_va;
+					pf_read_env_page(curenv, (void *)fault_va);
+				}
 				struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
 				LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
-
-				uint32 *ptrPageTable;
-				int ret = get_page_table(curenv->env_page_directory, (uint32)0x200000, &ptrPageTable);
-				if (ret == TABLE_NOT_EXIST)
-				{
-					cprintf("*** Not Mapped\n");
-				}
-				else
-				{
-					cprintf("*** Mapped and the Entry is: %x\n", ptrPageTable[PTX((uint32)0x200000)]);
-				}
 
 				// env_page_ws_print(curenv);
 				// cprintf("--------------------------------------------------\n");
@@ -304,8 +292,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 				{
 					if ((uint32)(currele->virtual_address & 0xFFFFF000) == (uint32)(fault_va & 0xFFFFF000))
 					{
-
-						cprintf("insertion\n");
+						// cprintf("insertion\n");
 						struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
 
 						struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
@@ -318,17 +305,6 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 						pt_set_page_permissions(curenv->env_page_directory, ele->virtual_address, PERM_PRESENT, 0);
 						LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
 
-						uint32 *ptrPageTable;
-						int ret = get_page_table(curenv->env_page_directory, (uint32)0x200000, &ptrPageTable);
-						if (ret == TABLE_NOT_EXIST)
-						{
-							cprintf("*** Not Mapped\n");
-						}
-						else
-						{
-							cprintf("*** Mapped and the Entry is: %x\n", ptrPageTable[PTX((uint32)0x200000)]);
-						}
-
 						// env_page_ws_print(curenv);
 						// cprintf("--------------------------------------------------\n");
 
@@ -336,12 +312,12 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 					}
 				}
 				if (allocate_frame(&frame_info_ptr) == 0)
-			{
-				map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_MARKED | PERM_USER | PERM_WRITEABLE);
-				frame_info_ptr->va = fault_va;
-				pf_read_env_page(curenv, (void *)fault_va);
-			}
-				cprintf("insertion faild\n");
+				{
+					map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_MARKED | PERM_USER | PERM_WRITEABLE);
+					frame_info_ptr->va = fault_va;
+					pf_read_env_page(curenv, (void *)fault_va);
+				}
+				// cprintf("insertion faild\n");
 				struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
 
 				LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
@@ -354,23 +330,6 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 				pt_set_page_permissions(curenv->env_page_directory, ele->virtual_address, PERM_PRESENT, 0);
 				LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
 
-				// uint32 *ptrPageTable;
-				// int ret = get_page_table(curenv->env_page_directory, (uint32)0x200000, &ptrPageTable);
-				// if (ret == TABLE_NOT_EXIST)
-				// {
-				// 	cprintf("*** Not Mapped\n");
-				// }
-				// else
-				// {
-				// 	cprintf("*** Mapped and the Entry is: %x\n", ptrPageTable[PTX((uint32)0x200000)]);
-				// }
-
-				// if ((fault_va & (uint32)0xFFFFF000) == (uint32)0xee3fe000)
-				// {
-				// 	unmap_frame(curenv->env_page_directory, 0x200000);
-				// 	unmap_frame(curenv->env_page_directory, 0x202000);
-				// }
-
 				// env_page_ws_print(curenv);
 				// cprintf("--------------------------------------------------\n");
 				return;
@@ -382,7 +341,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 			//  Write your code here, remove the panic and write your code
 
 			// cprintf("------------------------------------------------------------\n");
-			cprintf("Replacment va: %x\n", fault_va);
+			// cprintf("Replacment va: %x\n", fault_va);
 
 			// cprintf("Replacment\n");
 			struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
@@ -447,17 +406,6 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 			// env_page_ws_print(curenv);
 			// cprintf("------------------------------------------------------------\n");
 
-			// struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
-			// pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, PERM_PRESENT, 0);
-			// LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
-			//
-			// struct WorkingSetElement *secondList_last = LIST_LAST(&(curenv->SecondList));
-			// struct WorkingSetElement *activeLast = LIST_LAST(&(curenv->ActiveList));
-			// struct WorkingSetElement *secondList_First = LIST_LAST(&(curenv->ActiveList));
-			// LIST_REMOVE(&(curenv->SecondList), secondList_last);
-			// LIST_INSERT_HEAD(&(curenv->SecondList), secondList_First);
-			// LIST_REMOVE(&(curenv->ActiveList), activeLast);
-			// LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
 			// TODO: [PROJECT'23.MS3 - BONUS] [1] PAGE FAULT HANDLER - O(1) implementation of LRU replacement
 		}
 	}
@@ -467,41 +415,3 @@ void __page_fault_handler_with_buffering(struct Env *curenv, uint32 fault_va)
 {
 	panic("this function is not required...!!");
 }
-
-// ActiveList: 5
-// ============
-// 0:           eebfd000
-// 1:           203000
-// 2:           202000
-// 3:           201000
-// 4:           200000
-//
-// SecondList: 5
-// ============
-// 5:           802000
-// 6:           801000
-// 7:           800000
-// 8:           205000
-// 9:           204000
-//
-//
-//
-//
-//
-// ActiveList: 5
-// ============
-// 0:           803000
-// 1:           801000
-// 2:           800000
-// 3:           eebfd000
-// 4:           203000
-//
-// SecondList: 5
-// ============
-// 5:           202000
-// 6:           201000
-// 7:           200000
-// 8:           802000
-// 9:           205000
-
-// arr : 803040
