@@ -268,15 +268,16 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 		{
 			cprintf("Placment va: %x\n", fault_va);
 			struct FrameInfo *frame_info_ptr;
-			if (allocate_frame(&frame_info_ptr) == 0)
+			
+
+			if (activeListSize < curenv->ActiveListSize)
+			{
+				if (allocate_frame(&frame_info_ptr) == 0)
 			{
 				map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_MARKED | PERM_USER | PERM_WRITEABLE);
 				frame_info_ptr->va = fault_va;
 				pf_read_env_page(curenv, (void *)fault_va);
 			}
-
-			if (activeListSize < curenv->ActiveListSize)
-			{
 				cprintf("active not full\n");
 				struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
 				LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
@@ -334,7 +335,12 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 						return;
 					}
 				}
-
+				if (allocate_frame(&frame_info_ptr) == 0)
+			{
+				map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_MARKED | PERM_USER | PERM_WRITEABLE);
+				frame_info_ptr->va = fault_va;
+				pf_read_env_page(curenv, (void *)fault_va);
+			}
 				cprintf("insertion faild\n");
 				struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
 
