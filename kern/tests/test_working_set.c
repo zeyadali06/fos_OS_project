@@ -13,7 +13,6 @@
 int sys_check_LRU_lists(uint32 *active_list_content, uint32 *second_list_content, int actual_active_list_size, int actual_second_list_size)
 {
 	struct Env *env = curenv;
-	env_page_ws_print(env);
 	int active_list_validation = 1;
 	int second_list_validation = 1;
 	struct WorkingSetElement *ptr_WS_element;
