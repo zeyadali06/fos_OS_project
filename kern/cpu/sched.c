@@ -51,7 +51,7 @@ void sched_init()
 //=========================
 void fos_scheduler(void)
 {
-	//	cprintf("inside scheduler\n");
+	cprintf("inside scheduler\n");
 
 	chk1();
 	scheduler_status = SCH_STARTED;
@@ -88,7 +88,9 @@ void fos_scheduler(void)
 	}
 	else if (scheduler_method == SCH_BSD)
 	{
+		cprintf("-1\n");
 		next_env = fos_scheduler_BSD();
+		cprintf("0\n");
 	}
 	// temporarily set the curenv by the next env JUST for checking the scheduler
 	// Then: reset it again
@@ -97,13 +99,17 @@ void fos_scheduler(void)
 	chk2(next_env);
 	curenv = old_curenv;
 
+	cprintf("1\n");
+
 	// sched_print_all();
 
 	if (next_env != NULL)
 	{
 		//		cprintf("\nScheduler select program '%s' [%d]... counter = %d\n", next_env->prog_name, next_env->env_id, kclock_read_cnt0());
 		//		cprintf("Q0 = %d, Q1 = %d, Q2 = %d, Q3 = %d\n", queue_size(&(env_ready_queues[0])), queue_size(&(env_ready_queues[1])), queue_size(&(env_ready_queues[2])), queue_size(&(env_ready_queues[3])));
+		cprintf("2\n");
 		env_run(next_env);
+		cprintf("3\n");
 	}
 	else
 	{
@@ -117,7 +123,11 @@ void fos_scheduler(void)
 		scheduler_status = SCH_STOPPED;
 		// cprintf("[sched] no envs - nothing more to do!\n");
 		while (1)
+		{
+			cprintf("4\n");
 			run_command_prompt(NULL);
+			cprintf("5\n");
+		}
 	}
 }
 
@@ -178,6 +188,8 @@ void sched_init_BSD(uint8 numOfLevels, uint8 quantum)
 	// Comment the following line
 	//  panic("Not implemented yet");
 
+	cprintf("Enter sched_init_BSD\n");
+
 	num_of_ready_queues = numOfLevels;
 	quantums[0] = quantum;
 	kclock_set_quantum(quantums[0]);
@@ -185,6 +197,7 @@ void sched_init_BSD(uint8 numOfLevels, uint8 quantum)
 	{
 		init_queue(&(env_ready_queues[i]));
 	}
+	cprintf("Quit sched_init_BSD\n");
 
 	//=========================================
 	// DON'T CHANGE THESE LINES=================
@@ -213,6 +226,7 @@ struct Env *fos_scheduler_BSD()
 	// Your code is here
 	// Comment the following line
 	// panic("Not implemented yet");
+	cprintf("Enter fos_scheduler_BSD\n");
 
 	for (int i = 0; i < num_of_ready_queues; i++)
 	{
@@ -220,8 +234,10 @@ struct Env *fos_scheduler_BSD()
 		{
 			continue;
 		}
+		cprintf("Quit fos_scheduler_BSD\n");
 		return dequeue(&(env_ready_queues[i]));
 	}
+	cprintf("Quit fos_scheduler_BSD\n");
 
 	return NULL;
 }
@@ -232,9 +248,81 @@ struct Env *fos_scheduler_BSD()
 //========================================
 void clock_interrupt_handler()
 {
+	cprintf("Enter Clock Handler\n");
+
 	// TODO: [PROJECT'23.MS3 - #5] [2] BSD SCHEDULER - Your code is here
 	{
-		// cprintf("clock_interrupt_handler\n");
+		// calculate load (every second)
+		if ((quantums[0] * ticks) % 1000 == 0)
+		{
+			int numOfReadyProcesses = 0;
+			for (int i = 0; i < num_of_ready_queues; i++)
+			{
+				if (env_ready_queues[i].size == 0)
+				{
+					continue;
+				}
+				struct Env *currEnv;
+				LIST_FOREACH(currEnv, &(env_ready_queues[i]))
+				{
+					if (currEnv->env_status == ENV_READY || currEnv->env_status == ENV_RUNNABLE)
+					{
+						numOfReadyProcesses++;
+					}
+				}
+			}
+
+			// cprintf("%d\n", loadavg);
+			// cprintf("%d\n", fix_trunc(loadavg));
+			// cprintf("%d\n", fix_round(loadavg));
+			// cprintf("%d\n", get_load_average());
+			// cprintf("%d\n", fix_mul(fix_frac(59, 60), loadavg));
+			loadavg = fix_add(fix_mul(fix_frac(59, 60), loadavg), fix_scale(fix_frac(1, 60), numOfReadyProcesses));
+		}
+
+		// calculate recent
+		for (int i = 0; i < num_of_ready_queues; i++)
+		{
+			if (env_ready_queues[i].size == 0)
+				continue;
+
+			struct Env *currEnv;
+			LIST_FOREACH(currEnv, &(env_ready_queues[i]))
+			{
+				if (currEnv->env_status == ENV_RUNNABLE)
+					currEnv->recent = fix_add(currEnv->recent, fix_int(1));
+			}
+		}
+		if ((quantums[0] * ticks) % 1000 == 0)
+		{
+			for (int i = 0; i < num_of_ready_queues; i++)
+			{
+				if (env_ready_queues[i].size == 0)
+					continue;
+
+				struct Env *currEnv;
+				LIST_FOREACH(currEnv, &(env_ready_queues[i]))
+				{
+					currEnv->recent = fix_add(fix_mul(fix_div(fix_scale(loadavg, 2), fix_add(fix_scale(loadavg, 2), fix_int(1))), currEnv->recent), fix_int(currEnv->nice));
+				}
+			}
+		}
+
+		// calculate priority (every 4 ticks)
+		if (ticks % 4 == 0)
+		{
+			for (int i = 0; i < num_of_ready_queues; i++)
+			{
+				if (env_ready_queues[i].size == 0)
+					continue;
+
+				struct Env *currEnv;
+				LIST_FOREACH(currEnv, &(env_ready_queues[i]))
+				{
+					currEnv->priority = PRI_MAX - fix_trunc(fix_sub(fix_unscale(currEnv->recent, 4), fix_int(currEnv->nice * 2)));
+				}
+			}
+		}
 	}
 
 	/********DON'T CHANGE THIS LINE***********/
@@ -243,8 +331,8 @@ void clock_interrupt_handler()
 	{
 		update_WS_time_stamps();
 	}
-	// cprintf("Clock Handler\n") ;
 	fos_scheduler();
+	cprintf("Quit Clock Handler\n");
 	/*****************************************/
 }
 

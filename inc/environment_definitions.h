@@ -7,6 +7,7 @@
 #include <inc/queue.h>
 #include <inc/trap.h>
 #include <inc/memlayout.h>
+#include <inc/fixed_point.h>
 
 // An environment ID 'envid_t' has three parts:
 //
@@ -89,7 +90,7 @@ struct Env {
 	int priority;					// Current priority
 	char prog_name[PROGNAMELEN];	// Program name (to print it via USER.cprintf in multitaski
 	int nice ;
-	int recent;
+	fixed_point_t recent;
 	
 	//================
 	/*ADDRESS SPACE*/
