@@ -326,7 +326,7 @@ void clock_interrupt_handler()
 				curenv->priority = (num_of_ready_queues - 1) - fix_trunc(fix_unscale(curenv->recent, 4)) - (curenv->nice * 2);
 				if (curenv->priority > (num_of_ready_queues - 1))
 					curenv->priority = (num_of_ready_queues - 1);
-				else if (curenv->priority < PRI_MIN)
+				if (curenv->priority < PRI_MIN)
 					curenv->priority = PRI_MIN;
 			}
 
@@ -340,17 +340,15 @@ void clock_interrupt_handler()
 						int pri = (num_of_ready_queues - 1) - fix_trunc(fix_unscale(curr->recent, 4)) - (curr->nice * 2);
 						// cprintf("pri: %d, %d, %d, %d, %d\n", pri, curr->priority, fix_trunc(curr->recent), fix_trunc(fix_unscale(curr->recent, 4)), curr->nice * 2);
 
+						if (pri > (num_of_ready_queues - 1))
+							pri = (num_of_ready_queues - 1);
+						else if (pri < PRI_MIN)
+							pri = PRI_MIN;
+
 						if (curr->priority != pri)
 						{
 							// cprintf("pri: %d %d %d <--\n", pri, curr->priority, curr->env_id);
-
-							if (pri > (num_of_ready_queues - 1))
-								curr->priority = (num_of_ready_queues - 1);
-							else if (pri < PRI_MIN)
-								curr->priority = PRI_MIN;
-							else
-								curr->priority = pri;
-
+							curr->priority = pri;
 							struct Env *newEnv = curr;
 							remove_from_queue(&(env_ready_queues[i]), curr);
 							enqueue(&(env_ready_queues[curr->priority]), curr);
@@ -359,8 +357,8 @@ void clock_interrupt_handler()
 				}
 			}
 		}
-	}
 
+	}
 	/********DON'T CHANGE THIS LINE***********/
 	ticks++;
 	if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_TIME_APPROX))
