@@ -276,7 +276,6 @@ void clock_interrupt_handler()
 
 	// TODO: [PROJECT'23.MS3 - #5] [2] BSD SCHEDULER - Your code is here
 	{
-
 		// calculate load (every second)
 		if ((quantums[0] * ticks) % 1000 == 0)
 		{
@@ -357,7 +356,6 @@ void clock_interrupt_handler()
 				}
 			}
 		}
-
 	}
 	/********DON'T CHANGE THIS LINE***********/
 	ticks++;
