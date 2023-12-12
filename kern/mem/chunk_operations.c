@@ -186,6 +186,9 @@ void free_user_mem(struct Env *e, uint32 virtual_address, uint32 size)
 
 		env_page_ws_invalidate(e, virtual_address);
 
+		if (e->page_last_WS_element == NULL)
+			e->page_last_WS_element = LIST_FIRST(&(e->page_WS_list));
+
 		// cprintf("va= %x\n", virtual_address);
 
 		// cprintf("%d\n", free_frame_list.size);

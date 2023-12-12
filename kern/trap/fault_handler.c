@@ -205,6 +205,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 			uint32 *ptrPage;
 			uint32 deleted;
 			deleted = curenv->page_last_WS_element->virtual_address;
+			void *deleVA = (void *)(curenv->page_last_WS_element);
 			struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
 
 			struct FrameInfo *ptrFrame;
@@ -246,6 +247,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 				pf_update_env_page(curenv, deleted, deletedFrame);
 			}
 
+			free_block(deleVA);
 			unmap_frame(curenv->env_page_directory, deleted);
 
 			// cprintf("deleted frame: %x, deleted: %x, page table: %x, entry: %x\n", deletedFrame->va, deleted, ptrPage, ptrPage[PTX(fault_va)]);
@@ -391,6 +393,7 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 			}
 			pt_set_page_permissions(curenv->env_page_directory, secondListLastEle->virtual_address, 0, PERM_PRESENT);
 			LIST_REMOVE(&(curenv->SecondList), secondListLastEle);
+			free_block((void *)secondListLastEle);
 			unmap_frame(curenv->env_page_directory, secondListLastEle->virtual_address);
 
 			struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));

@@ -413,8 +413,11 @@ struct Env *env_create(char *user_program_name, unsigned int page_WS_size, unsig
 //
 void env_run(struct Env *e)
 {
+	// cprintf("Enter env_run\n");
 	if (curenv != e)
 	{
+		// cprintf("Enter condition\n");
+
 		curenv = e;
 		curenv->env_runs++;
 		lcr3(curenv->env_cr3);
@@ -423,11 +426,13 @@ void env_run(struct Env *e)
 	// uint16 cnt0 = kclock_read_cnt0();
 	// cprintf("env_run %s [%d]: Cnt BEFORE RESUME = %d\n", curenv->prog_name,curenv->env_id, cnt0);
 	// kclock_start();
-
+	
 	kclock_resume();
 
+	// cprintf("not ok\n");
 	// cprintf("env_run %s [%d]: Cnt AFTER RESUME = %d\n", curenv->prog_name,curenv->env_id, cnt0);
 	env_pop_tf(&(curenv->env_tf));
+	// cprintf("Quit env_run\n");
 }
 
 //===============================

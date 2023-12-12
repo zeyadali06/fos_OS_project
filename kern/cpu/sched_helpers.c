@@ -556,8 +556,14 @@ int env_get_nice(struct Env *e)
 void env_set_nice(struct Env *e, int nice_value)
 {
 	// e->nice= nice_value;
-	e->priority = PRI_MAX - (e->recent / 4) - (nice_value * 2);
+	// e->priority = PRI_MAX - (e->recent / 4) - (nice_value * 2);
 	e->nice = nice_value;
+	e->priority = (num_of_ready_queues - 1) - fix_trunc(fix_unscale(e->recent, 4)) - (e->nice * 2);
+	if (e->priority > (num_of_ready_queues - 1))
+		e->priority = (num_of_ready_queues - 1);
+	else if (e->priority < PRI_MIN)
+		e->priority = PRI_MIN;
+
 	// TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - env_set_nice
 	// Your code is here
 	// Comment the following line
@@ -568,7 +574,7 @@ int env_get_recent_cpu(struct Env *e)
 	// mul in integer return
 	// return  (fix_round( fix_int(e->recent))*100 );
 	// mul in fixed point
-	return fix_round(fix_scale(fix_int(e->recent), 100));
+	return fix_round(fix_scale(e->recent, 100));
 
 	// uint32 conv = e->recent * FIX_F;
 	// if(conv>0)
@@ -590,7 +596,7 @@ int get_load_average()
 	// mul in integer return
 	// return  (fix_round( fix_int(loadavg))*100 );
 	// mul in fixed point
-	return fix_round(fix_scale(fix_int(loadavg), 100));
+	return fix_round(fix_scale(loadavg, 100));
 
 	// uint32 avgconv = loadavg * FIX_F;
 	// if(avgconv>0)

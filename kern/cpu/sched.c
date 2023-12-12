@@ -37,6 +37,7 @@ uint32 isSchedMethodBSD()
 //===================================
 void sched_init()
 {
+	// cprintf("sched_init\n");
 	old_pf_counter = 0;
 
 	sched_init_RR(INIT_QUANTUM_IN_MS);
@@ -51,7 +52,7 @@ void sched_init()
 //=========================
 void fos_scheduler(void)
 {
-	//	cprintf("inside scheduler\n");
+	// cprintf("inside scheduler\n");
 
 	chk1();
 	scheduler_status = SCH_STARTED;
@@ -88,7 +89,9 @@ void fos_scheduler(void)
 	}
 	else if (scheduler_method == SCH_BSD)
 	{
+		// cprintf("-1\n");
 		next_env = fos_scheduler_BSD();
+		// cprintf("0\n");
 	}
 	// temporarily set the curenv by the next env JUST for checking the scheduler
 	// Then: reset it again
@@ -97,17 +100,34 @@ void fos_scheduler(void)
 	chk2(next_env);
 	curenv = old_curenv;
 
+	// cprintf("1\n");
+
 	// sched_print_all();
 
 	if (next_env != NULL)
 	{
 		//		cprintf("\nScheduler select program '%s' [%d]... counter = %d\n", next_env->prog_name, next_env->env_id, kclock_read_cnt0());
 		//		cprintf("Q0 = %d, Q1 = %d, Q2 = %d, Q3 = %d\n", queue_size(&(env_ready_queues[0])), queue_size(&(env_ready_queues[1])), queue_size(&(env_ready_queues[2])), queue_size(&(env_ready_queues[3])));
+		// cprintf("2\n");
+		// cprintf("id: %d\n", next_env->env_id);
 		env_run(next_env);
+		// cprintf("3\n");
 	}
 	else
 	{
 		/*2015*/ // No more envs... curenv doesn't exist any more! return back to command prompt
+		// cprintf("4\n");
+
+		// int sum = 0;
+		// for (int i = 0; i < num_of_ready_queues; i++)
+		// {
+		// 	cprintf("%d  ", env_ready_queues[i].size);
+		// 	sum += env_ready_queues[i].size;
+		// }
+		// cprintf("sum: %d\n", sum);
+
+		// sched_print_all();
+
 		curenv = NULL;
 		// lcr3(K_PHYSICAL_ADDRESS(ptr_page_directory));
 		lcr3(phys_page_directory);
@@ -117,7 +137,11 @@ void fos_scheduler(void)
 		scheduler_status = SCH_STOPPED;
 		// cprintf("[sched] no envs - nothing more to do!\n");
 		while (1)
+		{
+			// cprintf("4\n");
 			run_command_prompt(NULL);
+			// cprintf("5\n");
+		}
 	}
 }
 
@@ -178,13 +202,21 @@ void sched_init_BSD(uint8 numOfLevels, uint8 quantum)
 	// Comment the following line
 	//  panic("Not implemented yet");
 
+	// cprintf("Enter sched_init_BSD\n");
+
+	sched_delete_ready_queues();
 	num_of_ready_queues = numOfLevels;
+	env_ready_queues = kmalloc(num_of_ready_queues * sizeof(struct Env_Queue));
+	quantums = kmalloc(sizeof(uint8));
 	quantums[0] = quantum;
 	kclock_set_quantum(quantums[0]);
-	for (int i = 0; i < numOfLevels; i++)
+	for (int i = 0; i < num_of_ready_queues; i++)
 	{
 		init_queue(&(env_ready_queues[i]));
 	}
+	loadavg = fix_int(0);
+
+	// cprintf("Quit sched_init_BSD\n");
 
 	//=========================================
 	// DON'T CHANGE THESE LINES=================
@@ -213,14 +245,22 @@ struct Env *fos_scheduler_BSD()
 	// Your code is here
 	// Comment the following line
 	// panic("Not implemented yet");
+	// cprintf("Enter fos_scheduler_BSD\n");
+
+	if (curenv != NULL)
+	{
+		enqueue(&(env_ready_queues[curenv->priority]), curenv);
+	}
 
 	for (int i = 0; i < num_of_ready_queues; i++)
 	{
-		if (env_ready_queues[i].size == 0)
+		if (env_ready_queues[i].size != 0)
 		{
-			continue;
+			struct Env *cur = dequeue(&(env_ready_queues[i]));
+			kclock_set_quantum(quantums[0]);
+
+			return cur;
 		}
-		return dequeue(&(env_ready_queues[i]));
 	}
 
 	return NULL;
@@ -232,19 +272,99 @@ struct Env *fos_scheduler_BSD()
 //========================================
 void clock_interrupt_handler()
 {
+	// cprintf("Enter Clock Handler\n");
+
 	// TODO: [PROJECT'23.MS3 - #5] [2] BSD SCHEDULER - Your code is here
 	{
-		// cprintf("clock_interrupt_handler\n");
-	}
+		// calculate load (every second)
+		if ((quantums[0] * ticks) % 1000 == 0)
+		{
+			// cprintf("Start\n");
+			int numOfReadyProcesses = 0;
+			if (curenv != NULL)
+				numOfReadyProcesses++;
+			for (int i = 0; i < num_of_ready_queues; i++)
+			{
+				numOfReadyProcesses += env_ready_queues[i].size;
+			}
 
+			// cprintf("%d  %d  %d  %d  %d\n", loadavg, fix_trunc(loadavg), fix_mul(fix_frac(59, 60), loadavg), fix_scale(fix_frac(1, 60), numOfReadyProcesses), numOfReadyProcesses);
+			loadavg = fix_add(fix_mul(fix_frac(59, 60), loadavg), fix_scale(fix_frac(1, 60), numOfReadyProcesses));
+			// cprintf("End\n");
+		}
+
+		// calculate recent
+		if (curenv != NULL)
+			curenv->recent = fix_add(curenv->recent, fix_int(1));
+		if ((quantums[0] * ticks) % 1000 == 0)
+		{
+			// cprintf("recent: %d\n", fix_trunc(curenv->recent));
+			// cprintf("1 sec\n");
+			fixed_point_t first = fix_div(fix_scale(loadavg, 2), fix_add(fix_scale(loadavg, 2), fix_int(1)));
+			curenv->recent = fix_add(fix_mul(first, curenv->recent), fix_int(curenv->nice));
+
+			for (int i = 0; i < num_of_ready_queues; i++)
+			{
+				if (env_ready_queues[i].size != 0)
+				{
+					struct Env *currEnv;
+					LIST_FOREACH(currEnv, &(env_ready_queues[i]))
+					{
+						fixed_point_t firstFrac = fix_div(fix_scale(loadavg, 2), fix_add(fix_scale(loadavg, 2), fix_int(1)));
+						currEnv->recent = fix_add(fix_mul(firstFrac, currEnv->recent), fix_int(currEnv->nice));
+					}
+				}
+			}
+		}
+
+		// calculate priority (every 4 ticks)
+		if (ticks % 4 == 0)
+		{
+			if (curenv != NULL)
+			{
+				curenv->priority = (num_of_ready_queues - 1) - fix_trunc(fix_unscale(curenv->recent, 4)) - (curenv->nice * 2);
+				if (curenv->priority > (num_of_ready_queues - 1))
+					curenv->priority = (num_of_ready_queues - 1);
+				if (curenv->priority < PRI_MIN)
+					curenv->priority = PRI_MIN;
+			}
+
+			for (int i = 0; i < num_of_ready_queues; i++)
+			{
+				if (env_ready_queues[i].size != 0)
+				{
+					struct Env *curr;
+					LIST_FOREACH(curr, &(env_ready_queues[i]))
+					{
+						int pri = (num_of_ready_queues - 1) - fix_trunc(fix_unscale(curr->recent, 4)) - (curr->nice * 2);
+						// cprintf("pri: %d, %d, %d, %d, %d\n", pri, curr->priority, fix_trunc(curr->recent), fix_trunc(fix_unscale(curr->recent, 4)), curr->nice * 2);
+
+						if (pri > (num_of_ready_queues - 1))
+							pri = (num_of_ready_queues - 1);
+						else if (pri < PRI_MIN)
+							pri = PRI_MIN;
+
+						if (curr->priority != pri)
+						{
+							// cprintf("pri: %d %d %d <--\n", pri, curr->priority, curr->env_id);
+							curr->priority = pri;
+							struct Env *newEnv = curr;
+							remove_from_queue(&(env_ready_queues[i]), curr);
+							enqueue(&(env_ready_queues[curr->priority]), curr);
+						}
+					}
+				}
+			}
+		}
+	}
 	/********DON'T CHANGE THIS LINE***********/
 	ticks++;
 	if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_TIME_APPROX))
 	{
 		update_WS_time_stamps();
 	}
-	// cprintf("Clock Handler\n") ;
 	fos_scheduler();
+	// cprintf("Quit Clock Handler\n");
 	/*****************************************/
 }
 
