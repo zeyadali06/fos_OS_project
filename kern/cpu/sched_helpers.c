@@ -557,17 +557,13 @@ void env_set_nice(struct Env *e, int nice_value)
 {
 	// e->nice= nice_value;
 	// e->priority = PRI_MAX - (e->recent / 4) - (nice_value * 2);
-	e->priority = PRI_MAX - fix_trunc(fix_sub(fix_unscale(e->recent, 4), fix_int(nice_value * 2)));
-	if (e->priority > PRI_MAX)
-	{
-		e->priority = PRI_MAX;
-	}
-	else if (e->priority < PRI_MIN)
-	{
-		e->priority = PRI_MIN;
-	}
-
 	e->nice = nice_value;
+	e->priority = (num_of_ready_queues - 1) - fix_trunc(fix_unscale(e->recent, 4)) - (e->nice * 2);
+	if (e->priority > (num_of_ready_queues - 1))
+		e->priority = (num_of_ready_queues - 1);
+	else if (e->priority < PRI_MIN)
+		e->priority = PRI_MIN;
+
 	// TODO: [PROJECT'23.MS3 - #3] [2] BSD SCHEDULER - env_set_nice
 	// Your code is here
 	// Comment the following line
