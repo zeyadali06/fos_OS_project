@@ -302,8 +302,11 @@ void clock_interrupt_handler()
 		{
 			// cprintf("recent: %d\n", fix_trunc(curenv->recent));
 			// cprintf("1 sec\n");
-			fixed_point_t first = fix_div(fix_scale(loadavg, 2), fix_add(fix_scale(loadavg, 2), fix_int(1)));
-			curenv->recent = fix_add(fix_mul(first, curenv->recent), fix_int(curenv->nice));
+			if (curenv != NULL)
+			{
+				fixed_point_t first = fix_div(fix_scale(loadavg, 2), fix_add(fix_scale(loadavg, 2), fix_int(1)));
+				curenv->recent = fix_add(fix_mul(first, curenv->recent), fix_int(curenv->nice));
+			}
 
 			for (int i = 0; i < num_of_ready_queues; i++)
 			{
