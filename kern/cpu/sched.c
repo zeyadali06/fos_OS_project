@@ -263,6 +263,8 @@ struct Env *fos_scheduler_BSD()
 		}
 	}
 
+	loadavg = fix_int(0);
+
 	return NULL;
 }
 
@@ -348,7 +350,6 @@ void clock_interrupt_handler()
 						{
 							// cprintf("pri: %d %d %d <--\n", pri, curr->priority, curr->env_id);
 							curr->priority = pri;
-							struct Env *newEnv = curr;
 							remove_from_queue(&(env_ready_queues[i]), curr);
 							enqueue(&(env_ready_queues[curr->priority]), curr);
 						}
