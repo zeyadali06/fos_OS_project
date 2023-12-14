@@ -16,7 +16,7 @@
 #define SCH_BSD 2
 
 unsigned scheduler_method ;
-fixed_point_t  loadavg;
+fixed_point_t loadavg;
 
 ///Scheduler Queues
 //=================
