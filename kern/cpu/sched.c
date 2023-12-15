@@ -252,7 +252,7 @@ struct Env *fos_scheduler_BSD()
 		enqueue(&(env_ready_queues[curenv->priority]), curenv);
 	}
 
-	for (int i = 0; i < num_of_ready_queues; i++)
+	for (int i = num_of_ready_queues - 1; i >= 0; i--)
 	{
 		if (env_ready_queues[i].size != 0)
 		{
@@ -290,8 +290,8 @@ void clock_interrupt_handler()
 				numOfReadyProcesses += env_ready_queues[i].size;
 			}
 
-			// cprintf("%d  %d  %d  %d  %d\n", loadavg, fix_trunc(loadavg), fix_mul(fix_frac(59, 60), loadavg), fix_scale(fix_frac(1, 60), numOfReadyProcesses), numOfReadyProcesses);
 			loadavg = fix_add(fix_mul(fix_frac(59, 60), loadavg), fix_scale(fix_frac(1, 60), numOfReadyProcesses));
+			// cprintf("id: %d, load: %d, RP: %d\n", curenv->env_id, loadavg, numOfReadyProcesses);
 			// cprintf("End\n");
 		}
 
@@ -307,6 +307,7 @@ void clock_interrupt_handler()
 				fixed_point_t first = fix_div(fix_scale(loadavg, 2), fix_add(fix_scale(loadavg, 2), fix_int(1)));
 				curenv->recent = fix_add(fix_mul(first, curenv->recent), fix_int(curenv->nice));
 			}
+			// cprintf("id: %d, load: %d, recent: %d\n", curenv->env_id, loadavg, curenv->recent);
 
 			for (int i = 0; i < num_of_ready_queues; i++)
 			{
@@ -361,6 +362,7 @@ void clock_interrupt_handler()
 			}
 		}
 	}
+
 	/********DON'T CHANGE THIS LINE***********/
 	ticks++;
 	if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_TIME_APPROX))
