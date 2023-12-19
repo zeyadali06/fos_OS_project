@@ -70,6 +70,7 @@
     "fault_handler.h": "c",
     "tst_malloc_1": "c",
     "lib.h": "c",
-    "user_environment.h": "c"
+    "user_environment.h": "c",
+    "uheap.h": "c"
   }
 }
