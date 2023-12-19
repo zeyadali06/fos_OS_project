@@ -278,10 +278,13 @@ void clock_interrupt_handler()
 
 	// TODO: [PROJECT'23.MS3 - #5] [2] BSD SCHEDULER - Your code is here
 	{
-		// calculate load (every second)
+		// calculate recent every tick
+		if (curenv != NULL)
+			curenv->recent = fix_add(curenv->recent, fix_int(1));
+
+		// calculate loadavg and recent (every second)
 		if ((quantums[0] * ticks) % 1000 == 0)
 		{
-			// cprintf("Start\n");
 			int numOfReadyProcesses = 0;
 			if (curenv != NULL)
 				numOfReadyProcesses++;
@@ -291,23 +294,12 @@ void clock_interrupt_handler()
 			}
 
 			loadavg = fix_add(fix_mul(fix_frac(59, 60), loadavg), fix_scale(fix_frac(1, 60), numOfReadyProcesses));
-			// cprintf("id: %d, load: %d, RP: %d\n", curenv->env_id, loadavg, numOfReadyProcesses);
-			// cprintf("End\n");
-		}
 
-		// calculate recent
-		if (curenv != NULL)
-			curenv->recent = fix_add(curenv->recent, fix_int(1));
-		if ((quantums[0] * ticks) % 1000 == 0)
-		{
-			// cprintf("recent: %d\n", fix_trunc(curenv->recent));
-			// cprintf("1 sec\n");
 			if (curenv != NULL)
 			{
 				fixed_point_t first = fix_div(fix_scale(loadavg, 2), fix_add(fix_scale(loadavg, 2), fix_int(1)));
 				curenv->recent = fix_add(fix_mul(first, curenv->recent), fix_int(curenv->nice));
 			}
-			// cprintf("id: %d, load: %d, recent: %d\n", curenv->env_id, loadavg, curenv->recent);
 
 			for (int i = 0; i < num_of_ready_queues; i++)
 			{
@@ -321,6 +313,8 @@ void clock_interrupt_handler()
 					}
 				}
 			}
+
+			// cprintf("id: %d, load: %d, RP: %d\n", curenv->env_id, loadavg, numOfReadyProcesses);
 		}
 
 		// calculate priority (every 4 ticks)

@@ -302,11 +302,10 @@ uint32 sys_get_hard_limit()
 	return curenv->user_hard_limit;
 }
 
-void sys_env_set_nice (  int nice){
- env_set_nice(curenv , nice);
+void sys_env_set_nice(int nice)
+{
+	env_set_nice(curenv, nice);
 }
-
-
 
 void sys_allocate_chunk(uint32 virtual_address, uint32 size, uint32 perms)
 {
@@ -533,35 +532,37 @@ void *sys_sbrk(int increment)
 	 * 		be that sys_sbrk returns (void*) -1 and that the segment break and the process heap are unaffected.
 	 * 		You might have to undo any operations you have done so far in this case.
 	 */
-
 	struct Env *env = curenv; // the current running Environment to adjust its break limit
 
 	if (increment == 0)
 		return (void *)env->user_seg_brk;
 
+	// cprintf("Enter sys_sbrk %d %d\n", increment, env->page_WS_list.size);
+
 	uint32 prevbrk = env->user_seg_brk;
-	// cprintf("Enter sys_sbrk\n");
+
 	if (increment > 0)
 	{
 		if (ROUNDUP(env->user_seg_brk + increment, PAGE_SIZE) <= env->user_hard_limit)
 		{
 			// for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
 			// {
-			// cprintf("Enter for loop %d\n", i);
 			uint32 *pagetable;
 			if (get_page_table(env->env_page_directory, env->user_seg_brk, &pagetable) == TABLE_NOT_EXIST)
 			{
 				create_page_table(env->env_page_directory, env->user_seg_brk);
-				// cprintf("create_page_table %d\n", i);
 			}
 			pt_set_page_permissions(env->env_page_directory, env->user_seg_brk, PERM_MARKED | PERM_WRITEABLE | PERM_USER, 0);
 			env->user_seg_brk = ROUNDUP(env->user_seg_brk + increment, PAGE_SIZE);
 			// }
+			// cprintf("Quit sys_sbrk +(void *)prevbrk %d\n", env->page_WS_list.size);
 
 			return (void *)prevbrk;
 		}
 		else
 		{
+			// cprintf("Quit sys_sbrk +(void *)-1 %d\n", env->page_WS_list.size);
+
 			return (void *)-1;
 		}
 	}
@@ -571,44 +572,45 @@ void *sys_sbrk(int increment)
 		increment *= -1;
 		if (env->user_seg_brk - increment >= env->startOfUserHeap)
 		{
-
+			// cprintf("Enter va %x\n", env->user_seg_brk);
 			uint32 *ptrPageTable;
 			if (get_frame_info(env->env_page_directory, env->user_seg_brk, &ptrPageTable) != 0 && (ROUNDDOWN(env->user_seg_brk - increment, PAGE_SIZE) < ROUNDDOWN(env->user_seg_brk, PAGE_SIZE)))
 			{
-				pt_set_page_permissions(env->env_page_directory, env->user_seg_brk, 0, PERM_MARKED);
-				unmap_frame(env->env_page_directory, (uint32)env->user_seg_brk);
-
-				env_page_ws_invalidate(curenv, (ROUNDDOWN(env->user_seg_brk - increment, PAGE_SIZE)));
-
-				struct WorkingSetElement *curWS;
-				struct WorkingSetElement *firstele;
-				struct WorkingSetElement *secondele;
-
-				LIST_FOREACH(curWS, &(curenv->page_WS_list))
+				uint32 oldBRK = env->user_seg_brk;
+				for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
 				{
-					firstele = curWS;
-					secondele = curWS;
-
-					// cprintf("Enter\n");
-					if (curWS == curenv->page_last_WS_element)
-					{
-						break;
-					}
-					LIST_REMOVE(&(curenv->page_WS_list), firstele);
-					LIST_INSERT_TAIL(&(curenv->page_WS_list), secondele);
+					pt_set_page_permissions(env->env_page_directory, (uint32)(ROUNDDOWN(env->user_seg_brk, PAGE_SIZE)), 0, PERM_PRESENT | PERM_MARKED);
+					// free_block((void *)(ROUNDDOWN(env->user_seg_brk, PAGE_SIZE)));
+					unmap_frame(env->env_page_directory, (uint32)(ROUNDDOWN(env->user_seg_brk, PAGE_SIZE)));
+					env_page_ws_invalidate(env, (ROUNDDOWN(env->user_seg_brk, PAGE_SIZE)));
+					env->user_seg_brk -= PAGE_SIZE;
 				}
+				env->user_seg_brk = oldBRK - increment;
+
+				// cprintf("va %x\n", env->user_seg_brk);
+				return (void *)env->user_seg_brk;
 			}
 			// env->user_seg_brk -= PAGE_SIZE;
 
 			env->user_seg_brk -= increment;
 
+			// LIST_FOREACH(currMD, &list)
+			// {
+			// }
+
+			// cprintf("Quit sys_sbrk -(void *)env->user_seg_brk %d\n", env->page_WS_list.size);
+
 			return (void *)env->user_seg_brk;
 		}
 		else
 		{
+			// cprintf("Quit sys_sbrk -(void *)-1 %d\n", env->page_WS_list.size);
+
 			return (void *)-1;
 		}
 	}
+
+	// cprintf("Quit sys_sbrk finally %d\n", env->page_WS_list.size);
 	return (void *)-1;
 }
 
@@ -626,9 +628,9 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		// TODO: [PROJECT'23.MS1 - #4] [2] SYSTEM CALLS - Add suitable code here
 		// done added first 3 cases
 		//=====================================================================
-	case SYS_set_nice :
-	    sys_env_set_nice(a1);
-	    break;
+	case SYS_set_nice:
+		sys_env_set_nice(a1);
+		break;
 	case SYS_get_hard_limit:
 		return sys_get_hard_limit();
 		break;
