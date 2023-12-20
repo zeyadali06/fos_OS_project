@@ -559,12 +559,6 @@ void *sys_sbrk(int increment)
 
 			return (void *)prevbrk;
 		}
-		else
-		{
-			// cprintf("Quit sys_sbrk +(void *)-1 %d\n", env->page_WS_list.size);
-
-			return (void *)-1;
-		}
 	}
 
 	if (increment < 0)
@@ -579,34 +573,19 @@ void *sys_sbrk(int increment)
 				uint32 oldBRK = env->user_seg_brk;
 				for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
 				{
-					pt_set_page_permissions(env->env_page_directory, (uint32)(ROUNDDOWN(env->user_seg_brk, PAGE_SIZE)), 0, PERM_PRESENT | PERM_MARKED);
+					pt_set_page_permissions(env->env_page_directory, oldBRK, 0, PERM_PRESENT | PERM_MARKED);
 					// free_block((void *)(ROUNDDOWN(env->user_seg_brk, PAGE_SIZE)));
-					unmap_frame(env->env_page_directory, (uint32)(ROUNDDOWN(env->user_seg_brk, PAGE_SIZE)));
-					env_page_ws_invalidate(env, (ROUNDDOWN(env->user_seg_brk, PAGE_SIZE)));
-					env->user_seg_brk -= PAGE_SIZE;
+					unmap_frame(env->env_page_directory, oldBRK);
+					env_page_ws_invalidate(env, oldBRK);
+					oldBRK -= PAGE_SIZE;
 				}
-				env->user_seg_brk = oldBRK - increment;
-
-				// cprintf("va %x\n", env->user_seg_brk);
-				return (void *)env->user_seg_brk;
 			}
-			// env->user_seg_brk -= PAGE_SIZE;
 
 			env->user_seg_brk -= increment;
-
-			// LIST_FOREACH(currMD, &list)
-			// {
-			// }
 
 			// cprintf("Quit sys_sbrk -(void *)env->user_seg_brk %d\n", env->page_WS_list.size);
 
 			return (void *)env->user_seg_brk;
-		}
-		else
-		{
-			// cprintf("Quit sys_sbrk -(void *)-1 %d\n", env->page_WS_list.size);
-
-			return (void *)-1;
 		}
 	}
 

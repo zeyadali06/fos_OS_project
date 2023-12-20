@@ -18,16 +18,16 @@ uint32 _KHeapPlacementStrategy;
 #define KHP_PLACE_NEXTFIT 0x3
 #define KHP_PLACE_WORSTFIT 0x4
 
-uint32 *startOfKernalHeap;
-uint32 *brk;
-uint32 *rlimit;
+uint32 startOfKernalHeap;
+uint32 brk;
+uint32 rlimit;
 
 struct VAData
 {
-    void *va;
+    uint32 va;
     uint32 size;
 };
-#define KArrSize (((NUM_OF_KHEAP_PAGES * PAGE_SIZE) - (32*1024*1024)) - PAGE_SIZE) / PAGE_SIZE
+#define KArrSize ((((NUM_OF_KHEAP_PAGES * PAGE_SIZE) - (32*1024*1024)) - PAGE_SIZE) / PAGE_SIZE)
 struct VAData addresses[KArrSize];
 
 static inline void setKHeapPlacementStrategyCONTALLOC() { _KHeapPlacementStrategy = KHP_PLACE_CONTALLOC; }
