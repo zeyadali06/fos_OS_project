@@ -17,20 +17,21 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	if (daStart + initSizeToAllocate > daLimit)
 		return E_NO_MEM;
 
-	startOfKernalHeap = (uint32 *)daStart;
-	brk = (uint32 *)(daStart + initSizeToAllocate);
-	rlimit = (uint32 *)daLimit;
+	startOfKernalHeap = daStart;
+	brk = daStart + initSizeToAllocate;
+	rlimit = daLimit;
 	// rlimit = 0xF8000000
 
 	uint32 virtual_address = daStart;
 
-	for (int i = 0; i < ROUNDUP(((uint32)rlimit - daStart), PAGE_SIZE) / PAGE_SIZE; i++)
+	// for (int i = 0; i < ROUNDUP((rlimit - daStart), PAGE_SIZE) / PAGE_SIZE; i++)
+	for (int i = 0; i < ROUNDUP((initSizeToAllocate), PAGE_SIZE) / PAGE_SIZE; i++)
 	{
 		struct FrameInfo *ptr;
 		if (allocate_frame(&ptr) == 0)
 		{
-			map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE | PERM_USED);
-			ptr->va = (uint32)virtual_address & 0xFFFFF000;
+			map_frame(ptr_page_directory, ptr, virtual_address, PERM_WRITEABLE | PERM_USED);
+			ptr->va = virtual_address & 0xFFFFF000;
 		}
 		else
 		{
@@ -67,25 +68,58 @@ void *sbrk(int increment)
 	if (increment == 0)
 		return (void *)brk;
 
+	// cprintf("size: %d, frames: %d\n", increment, calculate_available_frames().freeBuffered + calculate_available_frames().freeNotBuffered);
 	if (increment > 0)
 	{
-		// cprintf("\n%x\n", increment);
-		// cprintf("%x %x %x %d\n", brk + ROUNDUP(increment, PAGE_SIZE), rlimit, ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE, free_frame_list.size);
 		if (ROUNDUP(brk + increment, PAGE_SIZE) <= rlimit)
 		{
-			// cprintf("%d\n", increment);
-			uint32 prevBrk = (uint32)brk;
+			uint32 prevBrk = brk;
+			uint32 oldBRK = brk + PAGE_SIZE;
 
-			// cprintf("ok\n");
-			struct FrameInfo *ptr;
-			if (allocate_frame(&ptr) == 0)
+			if (PTX(brk + increment) != PTX(brk - 1))
 			{
-				// cprintf("enter sbrk\n");
-				map_frame(ptr_page_directory, ptr, (uint32)brk, PERM_WRITEABLE | PERM_USED);
-				ptr->va = (uint32)brk & 0xFFFFF000;
+				bool ch = 0;
+				// cprintf("pages: %d\n", ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE);
+				uint32 *ptrPage;
+				if (brk % PAGE_SIZE == 0 && get_frame_info(ptr_page_directory, brk, &ptrPage) == 0)
+				{
+					// cprintf("ok\n");
+					ch = 1;
+					struct FrameInfo *ptr_frame_info;
+					if (allocate_frame(&ptr_frame_info) == 0)
+					{
+						// cprintf("%x\n", brk & 0xFFFFF000);
+						map_frame(ptr_page_directory, ptr_frame_info, brk, PERM_WRITEABLE | PERM_USED);
+						ptr_frame_info->va = brk;
+					}
+				}
+
+				int size = ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE;
+				if (ch)
+				{
+					size--;
+				}
+
+				for (int i = 0; i < size; i++)
+				{
+					// if (get_frame_info(ptr_page_directory, oldBRK, &ptrPage) == 0)
+					// {
+					struct FrameInfo *ptr_frame_info;
+					if (allocate_frame(&ptr_frame_info) == 0)
+					{
+						// cprintf("%x\n", oldBRK & 0xFFFFF000);
+						map_frame(ptr_page_directory, ptr_frame_info, oldBRK, PERM_WRITEABLE | PERM_USED);
+						// ptr_frame_info->references = 1;
+						ptr_frame_info->va = oldBRK;
+					}
+					oldBRK += PAGE_SIZE;
+					// }
+				}
 			}
-			// cprintf("%d %d\n", allocate_frame(&ptr), map_frame(ptr_page_directory, ptr, (uint32)virtual_address, PERM_WRITEABLE));
+
 			brk = ROUNDUP(brk + increment, PAGE_SIZE);
+
+			// cprintf("Quit increment %d\n", calculate_available_frames().freeBuffered + calculate_available_frames().freeNotBuffered);
 
 			return (void *)prevBrk;
 		}
@@ -97,25 +131,34 @@ void *sbrk(int increment)
 
 	if (increment < 0)
 	{
-		// uint32 prevBrk = (uint32)brk;
 		increment *= -1;
-
 		if (brk - increment >= startOfKernalHeap)
 		{
-
+			// cprintf("Enter va %x %x %x %x\n", brk, ROUNDDOWN(brk, PAGE_SIZE), ROUNDDOWN(brk - increment, PAGE_SIZE), startOfKernalHeap);
 			uint32 *ptrPageTable;
 
-			if (get_frame_info(ptr_page_directory, (uint32)brk, &ptrPageTable) != 0 && (ROUNDDOWN((uint32)brk - increment, PAGE_SIZE) < ROUNDDOWN((uint32)brk, PAGE_SIZE)))
+			if (PTX(brk - increment) != PTX(brk - 1))
 			{
-				unmap_frame(ptr_page_directory, (uint32)brk);
+				uint32 oldBRK = brk - 1;
+
+				// cprintf("pages: %d\n", ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE);
+
+				for (int i = 0; i < ROUNDUP(increment, PAGE_SIZE) / PAGE_SIZE; i++)
+				{
+					// cprintf("%x\n", oldBRK & 0xFFFFF000);
+					unmap_frame(ptr_page_directory, oldBRK);
+					// env_page_ws_invalidate(env, oldBRK);
+					oldBRK -= PAGE_SIZE;
+					if (oldBRK - (brk - increment) < PAGE_SIZE)
+						break;
+				}
 			}
 
-			brk -= (uint32)increment;
+			brk -= increment;
+
+			// cprintf("Quit decrement %d\n", calculate_available_frames().freeBuffered + calculate_available_frames().freeNotBuffered);
+
 			return (void *)brk;
-		}
-		else
-		{
-			return (void *)-1;
 		}
 	}
 
@@ -149,7 +192,7 @@ void *kmalloc(unsigned int size)
 		return alloc_block(size, DA_FF);
 	}
 
-	// cprintf("malloc   size: %d  ", ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
+	// cprintf("Enter malloc size: %d\n", ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
 
 	uint32 va = (uint32)rlimit + PAGE_SIZE;
 	// cprintf("va: %x\n", va);
@@ -162,7 +205,7 @@ void *kmalloc(unsigned int size)
 			// cprintf("%x %x %x\n", ptrPage, PTX(va), (uint32)(ptrPage[PTX(va)]));
 			// cprintf("page entry: %x\n", (uint32)(ptrPage[PTX(va)]));
 
-			if ((uint32)(ptrPage[PTX(va)]) == 0)
+			if ((uint32)((ptrPage[PTX(va)]) & 0xFFFFF000) == 0)
 			{
 				bool enoughFreeSpace = 1;
 				uint32 checkableVA = va;
@@ -180,11 +223,13 @@ void *kmalloc(unsigned int size)
 
 					if (PTX(checkableVA) == 1023)
 					{
-						checkableVA += PAGE_SIZE;
-						if (get_page_table(ptr_page_directory, (uint32)checkableVA, &ptrPage) == TABLE_NOT_EXIST)
-						{
-							return NULL;
-						}
+						// checkableVA += PAGE_SIZE;
+						get_page_table(ptr_page_directory, (checkableVA + PAGE_SIZE), &ptrPage);
+						// if (get_page_table(ptr_page_directory, (checkableVA + PAGE_SIZE), &ptrPage) == TABLE_NOT_EXIST)
+						// {
+						// 	cprintf("--------------------------------------------------------\n");
+						// 	ptrPage = create_page_table(ptr_page_directory, (checkableVA + PAGE_SIZE));
+						// }
 					}
 
 					checkableVA += PAGE_SIZE;
@@ -215,7 +260,7 @@ void *kmalloc(unsigned int size)
 				{
 					if (addresses[i].va == 0 && addresses[i].size == 0)
 					{
-						addresses[i].va = (void *)returnedVA;
+						addresses[i].va = returnedVA & 0xFFFFF000;
 						addresses[i].size = size;
 						break;
 					}
@@ -230,10 +275,6 @@ void *kmalloc(unsigned int size)
 			else
 				va += PAGE_SIZE;
 		}
-		else
-		{
-			va += PAGE_SIZE;
-		}
 
 		if (va > KERNEL_HEAP_MAX)
 			return NULL;
@@ -242,6 +283,7 @@ void *kmalloc(unsigned int size)
 	// change this "return" according to your answer
 	// kpanic_into_prompt("kmalloc() is not implemented yet...!!");
 	// cprintf("----------------------------------------------------------------\n");
+	// cprintf("Quit malloc size: %d\n", ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE);
 
 	return NULL;
 }
@@ -252,14 +294,14 @@ void kfree(void *virtual_address)
 	// refer to the project presentation and documentation for details
 	//  Write your code here, remove the panic and write your code
 	// cprintf("Enter kfree\n");
-	if ((uint32)virtual_address >= KERNEL_HEAP_START && (uint32)virtual_address <= (uint32)brk)
+	if ((uint32)virtual_address >= KERNEL_HEAP_START && (uint32)virtual_address <= brk)
 	{
 		free_block(virtual_address);
 		// cprintf("----------------------------------------------------------------\n");
 		return;
 	}
 
-	if ((uint32)virtual_address < (uint32)rlimit + 4096 || (uint32)virtual_address > KERNEL_HEAP_MAX)
+	if ((uint32)virtual_address < rlimit + 4096 || (uint32)virtual_address > KERNEL_HEAP_MAX)
 	{
 		panic("Invalid Address");
 		// return;
@@ -267,11 +309,11 @@ void kfree(void *virtual_address)
 
 	// cprintf("Enter\n");
 
-	uint32 size;
+	uint32 size = 0;
 	for (int i = 0; i < KArrSize; i++)
 	{
 		// cprintf("%x %x\n", virtual_address, addresses[i].va);
-		if (addresses[i].va == virtual_address)
+		if ((addresses[i].va & 0xFFFFF000) == ((uint32)virtual_address & 0xFFFFF000))
 		{
 			// cprintf("free   NOPages coresponding to VA: %d  VA: %x\n", (ROUNDUP(addresses[i].size, PAGE_SIZE) / PAGE_SIZE), addresses[i].va);
 			// va = addresses[i].va;
@@ -285,19 +327,21 @@ void kfree(void *virtual_address)
 		// 	numOfPages++;
 	}
 
-	for (int i = 0; i < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE); i++)
+	if (size != 0)
 	{
-		// cprintf("%d\n", free_frame_list.size);
-		// struct FrameInfo *fptr;
-		// uint32 *ptrPageTable;
-		// fptr = get_frame_info(ptr_page_directory, (uint32)virtual_address, &ptrPageTable);
-		// fptr->va = 0;
-		// free_frame(fptr);
-		unmap_frame(ptr_page_directory, (uint32)virtual_address);
-		virtual_address += PAGE_SIZE;
-		// cprintf("Finish UnMapping\n");
+		for (int i = 0; i < (ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE); i++)
+		{
+			// cprintf("%d\n", free_frame_list.size);
+			// struct FrameInfo *fptr;
+			// uint32 *ptrPageTable;
+			// fptr = get_frame_info(ptr_page_directory, (uint32)virtual_address, &ptrPageTable);
+			// fptr->va = 0;
+			// free_frame(fptr);
+			unmap_frame(ptr_page_directory, (uint32)virtual_address);
+			virtual_address += PAGE_SIZE;
+			// cprintf("Finish UnMapping\n");
+		}
 	}
-
 	// cprintf("----------------------------------------------------------------\n");
 
 	// cprintf("Quit\n");
