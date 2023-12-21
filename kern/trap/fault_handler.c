@@ -289,52 +289,76 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 			}
 			else
 			{
-				struct WorkingSetElement *currele;
-				LIST_FOREACH(currele, &(curenv->SecondList))
+				// struct WorkingSetElement *currele;
+				// LIST_FOREACH(currele, &(curenv->SecondList))
+				// {
+				// 	if ((uint32)(currele->virtual_address & 0xFFFFF000) == (uint32)(fault_va & 0xFFFFF000))
+				// 	{
+				// 		// cprintf("insertion\n");
+				// 		struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+				//
+				// 		struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
+				// 		LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
+				// 		pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, PERM_IN2ndLIST, PERM_PRESENT);
+				// 		LIST_INSERT_HEAD(&(curenv->SecondList), firstListLastEle1);
+				//
+				// 		struct WorkingSetElement *currele1 = currele;
+				// 		LIST_REMOVE(&(curenv->SecondList), currele1);
+				// 		pt_set_page_permissions(curenv->env_page_directory, ele->virtual_address, PERM_PRESENT, PERM_IN2ndLIST);
+				// 		LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+				//
+				// 		// env_page_ws_print(curenv);
+				// 		// cprintf("--------------------------------------------------\n");
+				//
+				// 		return;
+				// 	}
+				// }
+
+				int perm = pt_get_page_permissions(curenv->env_page_directory, fault_va);
+				if (perm & PERM_IN2ndLIST)
 				{
-					if ((uint32)(currele->virtual_address & 0xFFFFF000) == (uint32)(fault_va & 0xFFFFF000))
+					uint32 *ptrPage;
+					struct FrameInfo *frame = get_frame_info(curenv->env_page_directory, fault_va, &ptrPage);
+					pf_update_env_page(curenv, fault_va, frame);
+					env_page_ws_invalidate(curenv, fault_va);
+					struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+					LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+					if (allocate_frame(&frame_info_ptr) == 0)
 					{
-						// cprintf("insertion\n");
-						struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
-
-						struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
-						LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
-						pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, 0, PERM_PRESENT);
-						LIST_INSERT_HEAD(&(curenv->SecondList), firstListLastEle1);
-
-						struct WorkingSetElement *currele1 = currele;
-						LIST_REMOVE(&(curenv->SecondList), currele1);
-						pt_set_page_permissions(curenv->env_page_directory, ele->virtual_address, PERM_PRESENT, 0);
-						LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
-
-						// env_page_ws_print(curenv);
-						// cprintf("--------------------------------------------------\n");
-
-						return;
+						map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_MARKED | PERM_USER | PERM_WRITEABLE);
+						frame_info_ptr->va = fault_va;
+						pf_read_env_page(curenv, (void *)fault_va);
 					}
+
+					struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
+					LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
+					pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, PERM_IN2ndLIST, PERM_PRESENT);
+					LIST_INSERT_HEAD(&(curenv->SecondList), firstListLastEle1);
 				}
-				if (allocate_frame(&frame_info_ptr) == 0)
+				else
 				{
-					map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_MARKED | PERM_USER | PERM_WRITEABLE);
-					frame_info_ptr->va = fault_va;
-					pf_read_env_page(curenv, (void *)fault_va);
+					if (allocate_frame(&frame_info_ptr) == 0)
+					{
+						map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_MARKED | PERM_USER | PERM_WRITEABLE);
+						frame_info_ptr->va = fault_va;
+						pf_read_env_page(curenv, (void *)fault_va);
+					}
+					// cprintf("insertion faild\n");
+					struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
+
+					LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
+					pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, PERM_IN2ndLIST, PERM_PRESENT);
+					// uint32 *ptrPage;
+					// unmap_frame(curenv->env_page_directory, firstListLastEle1->virtual_address);
+					LIST_INSERT_HEAD(&(curenv->SecondList), firstListLastEle1);
+
+					struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+					pt_set_page_permissions(curenv->env_page_directory, ele->virtual_address, PERM_PRESENT, 0);
+					LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
 				}
-				// cprintf("insertion faild\n");
-				struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
-
-				LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
-				pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, 0, PERM_PRESENT);
-				// uint32 *ptrPage;
-				// unmap_frame(curenv->env_page_directory, firstListLastEle1->virtual_address);
-				LIST_INSERT_HEAD(&(curenv->SecondList), firstListLastEle1);
-
-				struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
-				pt_set_page_permissions(curenv->env_page_directory, ele->virtual_address, PERM_PRESENT, 0);
-				LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
 
 				// env_page_ws_print(curenv);
 				// cprintf("--------------------------------------------------\n");
-				return;
 			}
 		}
 		else
@@ -347,31 +371,63 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 
 			// cprintf("Replacment\n");
 			// cprintf();
-			struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
 
-			struct WorkingSetElement *currele;
-			LIST_FOREACH(currele, &(curenv->SecondList))
+			// struct WorkingSetElement *currele;
+			// LIST_FOREACH(currele, &(curenv->SecondList))
+			// {
+			// 	if ((uint32)(currele->virtual_address & 0xFFFFF000) == (uint32)(fault_va & 0xFFFFF000))
+			// 	{
+			// 		// cprintf("insertion\n");
+			//
+			// 		struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
+			// 		LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
+			// 		pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, 0, PERM_PRESENT);
+			// 		LIST_INSERT_HEAD(&(curenv->SecondList), firstListLastEle1);
+			//
+			// 		struct WorkingSetElement *currele1 = currele;
+			// 		LIST_REMOVE(&(curenv->SecondList), currele1);
+			// 		pt_set_page_permissions(curenv->env_page_directory, ele->virtual_address, PERM_PRESENT, 0);
+			// 		LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+			//
+			// 		// env_page_ws_print(curenv);
+			// 		// cprintf("--------------------------------------------------\n");
+			//
+			// 		return;
+			// 	}
+			// }
+			// cprintf("Enter %x\n", fault_va);
+			// env_page_ws_print(curenv);
+
+			int perm = pt_get_page_permissions(curenv->env_page_directory, fault_va);
+			if (perm & PERM_IN2ndLIST)
 			{
-				if ((uint32)(currele->virtual_address & 0xFFFFF000) == (uint32)(fault_va & 0xFFFFF000))
+				// cprintf("In Second\n");
+				uint32 *ptrPage;
+				struct FrameInfo *frame = get_frame_info(curenv->env_page_directory, fault_va, &ptrPage);
+				pf_update_env_page(curenv, fault_va, frame);
+				pt_set_page_permissions(curenv->env_page_directory, fault_va, PERM_PRESENT, PERM_IN2ndLIST);
+				unmap_frame(curenv->env_page_directory, fault_va);
+				env_page_ws_invalidate(curenv, fault_va);
+				struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
+				LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+				struct FrameInfo *frame_info_ptr;
+				if (allocate_frame(&frame_info_ptr) == 0)
 				{
-					// cprintf("insertion\n");
-
-					struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
-					LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
-					pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, 0, PERM_PRESENT);
-					LIST_INSERT_HEAD(&(curenv->SecondList), firstListLastEle1);
-
-					struct WorkingSetElement *currele1 = currele;
-					LIST_REMOVE(&(curenv->SecondList), currele1);
-					pt_set_page_permissions(curenv->env_page_directory, ele->virtual_address, PERM_PRESENT, 0);
-					LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
-
-					// env_page_ws_print(curenv);
-					// cprintf("--------------------------------------------------\n");
-
-					return;
+					map_frame(curenv->env_page_directory, frame_info_ptr, fault_va, PERM_MARKED | PERM_USER | PERM_WRITEABLE);
+					frame_info_ptr->va = fault_va;
+					pf_read_env_page(curenv, (void *)fault_va);
 				}
+
+				struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
+				LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
+				pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, PERM_IN2ndLIST, PERM_PRESENT);
+				LIST_INSERT_HEAD(&(curenv->SecondList), firstListLastEle1);
+				// cprintf("Quit In\n");
+				return;
 			}
+			// cprintf("Not In Second\n");
+
+			struct WorkingSetElement *ele = env_page_ws_list_create_element(curenv, fault_va);
 
 			struct FrameInfo *frame_info_ptr;
 			if (allocate_frame(&frame_info_ptr) == 0)
@@ -398,11 +454,13 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 
 			struct WorkingSetElement *firstListLastEle1 = LIST_LAST(&(curenv->ActiveList));
 			LIST_REMOVE(&(curenv->ActiveList), firstListLastEle1);
-			pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, 0, PERM_PRESENT);
+			pt_set_page_permissions(curenv->env_page_directory, firstListLastEle1->virtual_address, PERM_IN2ndLIST, PERM_PRESENT);
 			LIST_INSERT_HEAD(&(curenv->SecondList), firstListLastEle1);
 
 			// pt_set_page_permissions(curenv->env_page_directory, ele->virtual_address, PERM_PRESENT, 0);
 			LIST_INSERT_HEAD(&(curenv->ActiveList), ele);
+
+			// cprintf("Quit Not In\n");
 
 			// cprintf("Finish\n");
 			// env_page_ws_print(curenv);

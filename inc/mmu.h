@@ -72,6 +72,7 @@
 // hardware, so user processes are allowed to set them arbitrarily.
 #define PERM_AVAILABLE	0xE00	// Available for software use
 #define PERM_MARKED  0x200   // Marked Page
+#define PERM_IN2ndLIST 0x400	 // Marked Page
 
 // Only flags in PTE_USER may be used in system calls.
 #define PTE_USER	(PTE_AVAIL | PTE_P | PTE_W | PTE_U)
