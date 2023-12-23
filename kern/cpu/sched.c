@@ -283,7 +283,7 @@ void clock_interrupt_handler()
 			curenv->recent = fix_add(curenv->recent, fix_int(1));
 
 		// calculate loadavg and recent (every second)
-		if ((quantums[0] * ticks) % 1000 == 0)
+		if ((int)((quantums[0] * ticks) / 1000) > (int)((quantums[0] * (ticks - 1)) / 1000))
 		{
 			int numOfReadyProcesses = 0;
 			if (curenv != NULL)
